@@ -1,0 +1,114 @@
+<title>Keep Left UK</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>/*STYLES*/</style>
+<!--BODY-->
+<canvas id="game" aria-label="Top-down view of the town and your car"></canvas>
+
+<div class="hud hud-tl">
+  <div class="speed-box" id="speedBox">
+    <div class="ind" id="indL" aria-label="Left indicator">◀</div>
+    <div class="speed"><span id="speed">0</span><small>mph</small></div>
+    <div class="ind" id="indR" aria-label="Right indicator">▶</div>
+    <div class="gear" id="gear">D</div>
+  </div>
+  <div class="limit-sign" id="limitSign" data-limit="30" title="Current speed limit"><span>30</span></div>
+</div>
+
+<div class="hud hud-tr">
+  <canvas id="minimap" width="200" height="200" aria-label="Map"></canvas>
+  <div class="tally">
+    <div class="row"><span>Driving faults</span><b id="tMinor">0</b><i>/15</i></div>
+    <div class="row"><span>Serious</span><b id="tSerious">0</b></div>
+    <div class="row"><span>Dangerous</span><b id="tDanger">0</b></div>
+    <div class="row"><span>Theory</span><b id="tTheory">0/0</b></div>
+    <div class="row small"><span>Next question</span><b id="qNext">–</b></div>
+    <div class="verdict pass" id="verdict">On course to pass</div>
+  </div>
+</div>
+
+<div id="faults" class="faults" aria-live="polite"></div>
+<div id="toast" class="toast" hidden></div>
+<div id="keepLeft" class="keep-left" hidden>
+  <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48" fill="#0b5cad" stroke="#fff" stroke-width="4"/><g transform="rotate(45 50 50)" fill="#fff"><rect x="43" y="20" width="14" height="36"/><path d="M27 52 H73 L50 80 Z"/></g></svg>
+  <div>KEEP LEFT</div>
+</div>
+<div id="tip" class="tip" hidden><b>i</b><span id="tipText"></span></div>
+
+<div class="hud hud-bl">
+  <div class="keys"><kbd>↑↓←→</kbd> drive <kbd>Q</kbd><kbd>E</kbd> indicate <kbd>Space</kbd> handbrake <kbd>H</kbd> horn <kbd>C</kbd> camera</div>
+  <div class="btns"><button id="pauseBtn" class="chip">Pause &amp; test sheet <kbd>P</kbd></button><button id="quizBtn" class="chip">Theory question <kbd>T</kbd></button></div>
+</div>
+
+<div id="touch" class="touch" hidden>
+  <div class="pad left"><button id="tLeft" aria-label="Steer left">◀</button><button id="tRight" aria-label="Steer right">▶</button></div>
+  <div class="pad mid"><button id="tIndL" class="small" aria-label="Left indicator">⇦</button><button id="tHand" class="small" aria-label="Handbrake">HB</button><button id="tIndR" class="small" aria-label="Right indicator">⇨</button></div>
+  <div class="pad right"><button id="tBrake" aria-label="Brake">▼</button><button id="tGas" aria-label="Accelerate">▲</button></div>
+</div>
+
+<div id="question" class="overlay" hidden>
+  <div class="q-card" role="dialog" aria-modal="true" aria-labelledby="qText">
+    <div class="q-head"><span class="route">THEORY</span><span id="qTopic">Roundabouts</span></div>
+    <h2 id="qText">Question</h2>
+    <div id="qAnswers" class="answers"></div>
+    <div id="qFeedback" class="q-feedback" hidden></div>
+    <div class="q-foot"><span>Press 1–4 to answer</span><button id="qContinue" class="go" hidden>Back to driving <kbd>Enter</kbd></button></div>
+  </div>
+</div>
+
+<div id="pause" class="overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head"><h2 id="sheetTitle">Test sheet</h2><span>Marked the way a UK examiner would: 15 or fewer driving faults and no serious or dangerous faults is a pass.</span></div>
+    <div id="sheetSummary"></div>
+    <div class="table-wrap"><table class="dl25"><thead><tr><th>Category</th><th>Driving faults</th><th>S</th><th>D</th><th>Latest</th></tr></thead><tbody id="sheetRows"></tbody></table></div>
+    <div id="sheetReview" class="review"></div>
+    <div class="settings">
+      <label for="qInterval">Theory questions
+        <select id="qInterval"><option value="45">Every 45 s</option><option value="75">Every 75 s</option><option value="120">Every 2 min</option><option value="240">Every 4 min</option><option value="0">Off (press T)</option></select></label>
+      <label for="camMode">Camera
+        <select id="camMode"><option value="chase">Behind the car</option><option value="north">North up (map)</option></select></label>
+      <label class="check" for="tipsOn"><input type="checkbox" id="tipsOn"> Coaching tips</label>
+      <label class="check" for="soundOn"><input type="checkbox" id="soundOn"> Sound</label>
+    </div>
+    <div class="sheet-foot"><button id="restartBtn" class="ghost">New session</button><button id="resumeBtn" class="go">Resume driving <kbd>P</kbd></button></div>
+  </div>
+</div>
+
+<div id="title" class="overlay title">
+  <div class="title-card">
+    <div class="brand">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48" fill="#0b5cad" stroke="#fff" stroke-width="4"/><g transform="rotate(45 50 50)" fill="#fff"><rect x="43" y="20" width="14" height="36"/><path d="M27 52 H73 L50 80 Z"/></g></svg>
+      <div><h1>Keep Left</h1><p>Drive round a small English town and pass the theory on the way.</p></div>
+    </div>
+    <div class="cols">
+      <section>
+        <h3>What changes in the UK</h3>
+        <ul class="diff">
+          <li><b>Drive on the left.</b> You sit on the right, next to the centre line.</li>
+          <li><b>Roundabouts go clockwise.</b> Give way to traffic from your right.</li>
+          <li><b>Right turns cross traffic.</b> Left turns are the short, simple ones.</li>
+          <li><b>Speeds are in mph.</b> 30 in towns, 60 on single carriageways, 70 on dual carriageways.</li>
+          <li><b>Red + amber still means stop.</b> No flashing green.</li>
+          <li><b>Zebra crossings:</b> give way once someone steps on.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Controls</h3>
+        <table class="ctrl">
+          <tr><td><kbd>↑</kbd> <kbd>W</kbd></td><td>Accelerate</td></tr>
+          <tr><td><kbd>↓</kbd> <kbd>S</kbd></td><td>Brake, hold to reverse</td></tr>
+          <tr><td><kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd></td><td>Steer</td></tr>
+          <tr><td><kbd>Q</kbd> / <kbd>E</kbd></td><td>Left / right indicator</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Handbrake (slides)</td></tr>
+          <tr><td><kbd>C</kbd></td><td>Camera: behind car or map</td></tr>
+          <tr><td><kbd>P</kbd> / <kbd>T</kbd></td><td>Test sheet / theory question</td></tr>
+        </table>
+        <p class="note">Faults are marked like the real practical test. A theory question pops up every 75 seconds, and after a mistake it asks about the rule you broke.</p>
+      </section>
+    </div>
+    <button id="startBtn" class="go big">Start driving</button>
+  </div>
+</div>
+<script>/*SCRIPTS*/</script>
