@@ -8,7 +8,7 @@ const ui = {
 
   init() {
     this.qOrder = QUESTIONS.map((_, i) => i).sort(() => Math.random() - 0.5);
-    $('startBtn').onclick = () => { sfx.init(); this.hide('title'); game.state = 'drive'; game.tip('You start on a town street. Drive on the LEFT. Q / E work the indicators.', 'start', 999); };
+    $('startBtn').onclick = () => { sfx.init(); this.hide('title'); game.state = 'drive'; game.tip('Drive on the LEFT. Q / E work the indicators, L is the speed limiter.', 'start', 999); };
     $('resumeBtn').onclick = () => this.resume();
     $('restartBtn').onclick = () => { newSession(); this.resume(); };
     $('pauseBtn').onclick = () => this.pause();
@@ -19,6 +19,9 @@ const ui = {
     $('camMode').onchange = (e) => { game.settings.camera = e.target.value; saveSettings(); };
     $('tipsOn').checked = game.settings.tips;
     $('tipsOn').onchange = (e) => { game.settings.tips = e.target.checked; saveSettings(); };
+    for (const id of ['assistMode', 'assistTitle']) { $(id).value = game.settings.assist; $(id).onchange = (e) => { game.settings.assist = e.target.value; saveSettings(); $('assistMode').value = $('assistTitle').value = e.target.value; }; }
+    $('startAt').value = game.settings.start;
+    $('startAt').onchange = (e) => { game.settings.start = e.target.value; saveSettings(); newSession(); };
     $('soundOn').checked = game.settings.sound;
     $('soundOn').onchange = (e) => { game.settings.sound = e.target.checked; saveSettings(); };
     this.initTouch();
@@ -70,7 +73,11 @@ const ui = {
     $('speed').textContent = Math.round(mph);
     $('speedBox').classList.toggle('over', p.speed * MPH > lim + 1);
     $('gear').textContent = p.reversing ? 'R' : 'D';
-    const ls = $('limitSign'); ls.dataset.limit = lim; ls.querySelector('span').textContent = lim === 60 ? '' : lim;
+    const ls = $('limitSign'); ls.dataset.limit = lim >= 60 ? 'nsl' : lim; ls.querySelector('span').textContent = lim >= 60 ? '' : lim;
+    ls.title = lim >= 60 ? `National speed limit: ${lim} mph here` : `${lim} mph limit`;
+    $('limiter').hidden = !p.limiter; $('limiter').textContent = `Limiter ${lim}`;
+    const w = game.where;
+    if (w) { $('roadName').textContent = w.road; $('district').textContent = w.kind === 'dual' ? 'A40 · dual carriageway' : { suburb: 'Ashford Green', city: 'Kingsgate city centre', village: 'Little Mardon', rural: 'Countryside' }[w.district] || ''; }
     const blink = Math.floor(game.time * 2.6) % 2 === 0;
     $('indL').classList.toggle('on', p.ind === -1 && blink);
     $('indR').classList.toggle('on', p.ind === 1 && blink);

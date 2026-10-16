@@ -2,7 +2,15 @@
 const game = {
   state: 'title', time: 0, player: null, faults: [], theory: { asked: 0, correct: 0, log: [] },
   qTimer: 0, shake: 0, tipShown: {}, lastFaultTopic: null, lastFaultT: -99,
-  settings: { qInterval: 75, camera: 'chase', tips: true, sound: true },
+  settings: { qInterval: 75, camera: 'chase', tips: true, sound: true, assist: 'strong', start: 'suburb' },
+  where: null,
+};
+// Start points: road name, district, distance along, direction.
+const STARTS = {
+  suburb: { road: 'Elm Grove', district: 'suburb', s: 30, dir: 1, label: 'Ashford Green (suburbs)' },
+  city: { road: 'Castle Street', district: 'city', s: 30, dir: 1, label: 'Kingsgate (city centre)' },
+  bypass: { road: 'Oak Street', district: 'rural', s: 40, dir: 1, label: 'Towards the A40 bypass' },
+  village: { road: 'High Street', district: 'village', s: 20, dir: 1, label: 'Little Mardon (village)' },
 };
 const input = { up: false, down: false, left: false, right: false, hand: false };
 let canvas, ctx, mini, mctx, cam = { x: 0, y: 0, rot: 0, scale: 10 };
@@ -13,18 +21,16 @@ function saveSettings() { try { localStorage.setItem('keepleft-settings', JSON.s
 function newSession() {
   traffic.cars.length = 0; traffic.peds.length = 0; skids.length = 0;
   const R = rng(Date.now() & 0xffff);
-  const start = world.node(1, 1).edges[1];        // heading south from the lights at (1,1)
-  game.player = makePlayer(start.a.x + LANE, start.a.y + 40, Math.PI / 2);
-  game.player.limit = start.limit;
-  for (let k = 0, tries = 0; k < 64 && tries < 900; tries++) {
-    const e = world.edges[(R() * world.edges.length) | 0];
-    const fwd = R() < 0.5, along = e.a.r + 14 + R() * (SP - e.a.r - e.b.r - 34);
-    const d = fwd ? DIRS[e.dir] : DIRS[(e.dir + 2) % 4], from = fwd ? e.a : e.b;
-    const x = from.x + d[0] * along, y = from.y + d[1] * along;
-    if (Math.hypot(x - game.player.x, y - game.player.y) < 45) continue;
-    if (traffic.cars.some(c => Math.hypot(c.x - x, c.y - y) < 12)) continue;
-    spawnCar(e, fwd, along, R); k++;
-  }
+  const st = STARTS[game.settings.start] || STARTS.suburb;
+  const e = world.edges.find(x => x.name === st.road && x.district === st.district && lanesOf(x, st.dir)) || world.edges[0];
+  const q = pointAt(e, st.dir > 0 ? e.a.r + st.s : e.len - e.b.r - st.s, laneLat(e, st.dir, 0));
+  game.player = makePlayer(q.x, q.y, st.dir > 0 ? q.ang : q.ang + Math.PI);
+  game.player.limit = e.limit; game.player.lastEdge = e;
+  // Keep the first stretch of road clear of parked cars.
+  const before = world.parked.length;
+  world.parked = world.parked.filter(c => Math.hypot(c.x - q.x, c.y - q.y) > 70);
+  if (world.parked.length !== before) buildObstructions();
+  spawnTraffic(R, game.player);
   spawnPeds(R);
   game.faults = []; game.theory = { asked: 0, correct: 0, log: [] }; game.qTimer = 0; game.tipShown = {};
   cam.x = game.player.x; cam.y = game.player.y; cam.rot = game.settings.camera === 'chase' ? -(game.player.heading + Math.PI / 2) : 0;
@@ -61,6 +67,9 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyE' || e.code === 'KeyX') setIndicator(1);
   if (e.code === 'KeyC') { game.settings.camera = game.settings.camera === 'chase' ? 'north' : 'chase'; saveSettings(); ui.toast(game.settings.camera === 'chase' ? 'Camera: behind the car' : 'Camera: north up (map view)'); }
   if (e.code === 'KeyH') sfx.horn(true);
+  if (e.code === 'KeyL') { const p = game.player; p.limiter = !p.limiter; ui.toast(p.limiter ? `Speed limiter on: holds you at the limit` : 'Speed limiter off'); }
+  if (e.code === 'KeyK') { const order = ['strong', 'light', 'off'], a = order[(order.indexOf(game.settings.assist) + 1) % 3]; game.settings.assist = a; saveSettings();
+    ui.toast({ strong: 'Lane assist: strong (keeps you centred)', light: 'Lane assist: light (lines you up with the road)', off: 'Lane assist: off' }[a]); if ($('assistMode')) $('assistMode').value = a; }
   if (e.code === 'KeyT') ui.askQuestion();
   if (e.code === 'KeyM') { game.settings.sound = !game.settings.sound; saveSettings(); sfx.update(0, 0); ui.toast(game.settings.sound ? 'Sound on' : 'Sound off'); }
   if (e.code === 'Escape' || e.code === 'KeyP') ui.pause();
@@ -131,10 +140,11 @@ function frame(ts) {
       game.time += h;
       const p = game.player;
       const prev = updatePlayerPhysics(p, input, h);
-      collidePlayer(p, prev, game.time);
+      collidePlayer(p, prev);
       leaveSkids(p, prev);
+      updateRail(h, game.time);
       updateCars(h, game.time, p);
-      updatePeds(h, p);
+      updatePeds(h, p, game.time);
     }
     checkRules(game.player, dt);
     game.qTimer += dt;
@@ -166,7 +176,7 @@ function render(dt) {
   const p = game.player, sp = Math.hypot(p.vx, p.vy);
   const chase = game.settings.camera === 'chase';
   // Camera: look ahead along the velocity, zoom out with speed.
-  const ahead = chase ? 0.55 : 0.8;
+  const ahead = chase ? 0.45 : 0.8;
   const tx = p.x + p.vx * ahead, ty = p.y + p.vy * ahead;
   const k = Math.min(1, dt * 4);
   cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
@@ -174,7 +184,7 @@ function render(dt) {
   const targetScale = base * (1 - Math.min(sp, 32) / 32 * 0.42);
   cam.scale += (targetScale - cam.scale) * Math.min(1, dt * 1.5);
   const rotT = chase ? -(p.heading + Math.PI / 2) : 0;
-  cam.rot += angDiff(rotT, cam.rot) * Math.min(1, dt * (chase ? 3.5 : 6));
+  cam.rot += angDiff(rotT, cam.rot) * Math.min(1, dt * (chase ? 5 : 6));
   game.shake = Math.max(0, game.shake - dt * 2.5);
   const shx = (Math.random() - 0.5) * game.shake * 12 * dpr, shy = (Math.random() - 0.5) * game.shake * 12 * dpr;
 
@@ -184,9 +194,12 @@ function render(dt) {
   ctx.rotate(cam.rot); ctx.scale(cam.scale, cam.scale); ctx.translate(-cam.x, -cam.y);
   const rad = Math.hypot(w, h) / cam.scale * 0.62;
   const view = { x0: cam.x - rad, y0: cam.y - rad, x1: cam.x + rad, y1: cam.y + rad };
-  drawWorld(ctx, cam, game.time, view);
-  for (const ped of traffic.peds) if (ped.x > view.x0 && ped.x < view.x1 && ped.y > view.y0 && ped.y < view.y1) drawPed(ctx, ped, game.time);
-  for (const c of traffic.cars) if (c.x > view.x0 - 6 && c.x < view.x1 + 6 && c.y > view.y0 - 6 && c.y < view.y1 + 6) drawCar(ctx, c, game.time);
+  drawWorld(ctx, game.time, view);
+  const inV = (o, m) => o.x > view.x0 - m && o.x < view.x1 + m && o.y > view.y0 - m && o.y < view.y1 + m;
+  for (const ped of traffic.peds) if (inV(ped, 1)) drawPed(ctx, ped, game.time);
+  for (const c of world.parked) if (inV(c, 6)) drawCar(ctx, c, game.time);
+  for (const c of traffic.cars) if (inV(c, 12)) drawCar(ctx, c, game.time);
+  for (const tr of world.trains) drawTrain(ctx, tr, view);
   drawCar(ctx, p, game.time);
   drawBuildingsAndTrees(ctx, view, -cam.rot);
   drawSignsAndLights(ctx, view, -cam.rot, game.time);
@@ -206,7 +219,7 @@ function boot() {
   canvas = document.getElementById('game'); ctx = canvas.getContext('2d');
   mini = document.getElementById('minimap'); mctx = mini.getContext('2d');
   resize(); addEventListener('resize', resize);
-  buildWorld();
+  buildMap(); buildIndex(); buildScenery(); buildIndex(); buildObstructions(); prepareRender();
   newSession();
   ui.init();
   requestAnimationFrame(frame);

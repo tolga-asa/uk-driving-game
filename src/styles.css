@@ -28,9 +28,17 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
 .gear { grid-column: 1 / -1; text-align: center; font: 600 12px/1 var(--display); letter-spacing: .2em; color: var(--muted); margin-top: 2px; }
 .limit-sign { width: 62px; height: 62px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 7px var(--sign-red), 0 2px 8px rgba(0,0,0,.35);
   display: grid; place-items: center; color: #111; font: 700 26px/1 var(--display); position: relative; overflow: hidden; }
-.limit-sign[data-limit="60"] { box-shadow: inset 0 0 0 2px #111, 0 2px 8px rgba(0,0,0,.35); }
-.limit-sign[data-limit="60"]::after { content: ''; position: absolute; width: 140%; height: 10px; background: #111; transform: rotate(-45deg); }
+.limit-sign[data-limit="nsl"] { box-shadow: inset 0 0 0 2px #111, 0 2px 8px rgba(0,0,0,.35); }
+.limit-sign[data-limit="nsl"]::after { content: ''; position: absolute; width: 140%; height: 10px; background: #111; transform: rotate(-45deg); }
 
+.road-label { position: fixed; z-index: 5; top: calc(118px + env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); pointer-events: none;
+  display: grid; gap: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.road-label b { font: 700 22px/1 var(--display); letter-spacing: .02em; }
+.road-label span { font: 600 12px/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--route-yellow); }
+.limiter { align-self: center; background: var(--sign-blue); border: 2px solid #fff; border-radius: 6px; padding: 4px 8px; font: 700 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
+.title-opts { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-bottom: 16px; }
+.title-opts label { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.title-opts select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: #1d242e; color: var(--text); }
 .hud-tr { top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: 170px; display: grid; gap: 8px; }
 #minimap { width: 170px; height: 170px; border-radius: 10px; border: 2px solid rgba(255,255,255,.7); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
 .tally { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
@@ -162,6 +170,7 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
   .faults { width: calc(100vw - 164px); left: max(12px, env(safe-area-inset-left, 0px)); transform: none; top: calc(110px + env(safe-area-inset-top, 0px)); }
   .fault-msg { font-size: 14px; } .fault-tip { font-size: 12px; }
   .speed { font-size: 38px; } .limit-sign { width: 48px; height: 48px; font-size: 20px; }
+  .road-label { top: calc(96px + env(safe-area-inset-top, 0px)); } .road-label b { font-size: 17px; }
   .keys { display: none; }
   .hud-bl { bottom: calc(152px + env(safe-area-inset-bottom, 0px)); }
   .tip { bottom: calc(196px + env(safe-area-inset-bottom, 0px)); font-size: 13px; padding: 8px 10px; }

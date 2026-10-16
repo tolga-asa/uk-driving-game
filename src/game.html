@@ -15,7 +15,9 @@
     <div class="gear" id="gear">D</div>
   </div>
   <div class="limit-sign" id="limitSign" data-limit="30" title="Current speed limit"><span>30</span></div>
+  <div class="limiter" id="limiter" hidden>Limiter</div>
 </div>
+<div class="road-label" aria-live="polite"><b id="roadName"></b><span id="district"></span></div>
 
 <div class="hud hud-tr">
   <canvas id="minimap" width="200" height="200" aria-label="Map"></canvas>
@@ -38,7 +40,7 @@
 <div id="tip" class="tip" hidden><b>i</b><span id="tipText"></span></div>
 
 <div class="hud hud-bl">
-  <div class="keys"><kbd>↑↓←→</kbd> drive <kbd>Q</kbd><kbd>E</kbd> indicate <kbd>Space</kbd> handbrake <kbd>H</kbd> horn <kbd>C</kbd> camera</div>
+  <div class="keys"><kbd>↑↓←→</kbd> drive <kbd>Q</kbd><kbd>E</kbd> indicate <kbd>Space</kbd> handbrake <kbd>L</kbd> limiter <kbd>K</kbd> lane assist <kbd>C</kbd> camera</div>
   <div class="btns"><button id="pauseBtn" class="chip">Pause &amp; test sheet <kbd>P</kbd></button><button id="quizBtn" class="chip">Theory question <kbd>T</kbd></button></div>
 </div>
 
@@ -67,6 +69,8 @@
     <div class="settings">
       <label for="qInterval">Theory questions
         <select id="qInterval"><option value="45">Every 45 s</option><option value="75">Every 75 s</option><option value="120">Every 2 min</option><option value="240">Every 4 min</option><option value="0">Off (press T)</option></select></label>
+      <label for="assistMode">Lane assist
+        <select id="assistMode"><option value="strong">Strong: keeps you centred</option><option value="light">Light: lines you up</option><option value="off">Off</option></select></label>
       <label for="camMode">Camera
         <select id="camMode"><option value="chase">Behind the car</option><option value="north">North up (map)</option></select></label>
       <label class="check" for="tipsOn"><input type="checkbox" id="tipsOn"> Coaching tips</label>
@@ -80,7 +84,7 @@
   <div class="title-card">
     <div class="brand">
       <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48" fill="#0b5cad" stroke="#fff" stroke-width="4"/><g transform="rotate(45 50 50)" fill="#fff"><rect x="43" y="20" width="14" height="36"/><path d="M27 52 H73 L50 80 Z"/></g></svg>
-      <div><h1>Keep Left</h1><p>Drive round a small English town and pass the theory on the way.</p></div>
+      <div><h1>Keep Left</h1><p>Suburbs, a city centre, a 70 mph dual carriageway and country lanes. Practise the roads, pass the theory on the way.</p></div>
     </div>
     <div class="cols">
       <section>
@@ -102,11 +106,19 @@
           <tr><td><kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd></td><td>Steer</td></tr>
           <tr><td><kbd>Q</kbd> / <kbd>E</kbd></td><td>Left / right indicator</td></tr>
           <tr><td><kbd>Space</kbd></td><td>Handbrake (slides)</td></tr>
+          <tr><td><kbd>L</kbd></td><td>Speed limiter (holds you at the limit)</td></tr>
+          <tr><td><kbd>K</kbd></td><td>Lane assist: strong, light or off</td></tr>
           <tr><td><kbd>C</kbd></td><td>Camera: behind car or map</td></tr>
           <tr><td><kbd>P</kbd> / <kbd>T</kbd></td><td>Test sheet / theory question</td></tr>
         </table>
-        <p class="note">Faults are marked like the real practical test. A theory question pops up every 75 seconds, and after a mistake it asks about the rule you broke.</p>
+        <p class="note">Faults are marked like the real practical test. A theory question pops up every 75 seconds, and after a mistake it asks about the rule you broke. Tap the arrow keys for small corrections; the steering eases in like a real wheel.</p>
       </section>
+    </div>
+    <div class="title-opts">
+      <label for="startAt">Start in
+        <select id="startAt"><option value="suburb">Ashford Green (suburbs)</option><option value="city">Kingsgate (city centre)</option><option value="bypass">Near the A40 bypass</option><option value="village">Little Mardon (village)</option></select></label>
+      <label for="assistTitle">Lane assist
+        <select id="assistTitle"><option value="strong">Strong</option><option value="light">Light</option><option value="off">Off</option></select></label>
     </div>
     <button id="startBtn" class="go big">Start driving</button>
   </div>

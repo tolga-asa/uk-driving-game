@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = f => readFileSync(join(here, 'src', f), 'utf8');
-const scripts = ['questions.js', 'questions2.js', 'world.js', 'traffic.js', 'player.js', 'render.js', 'ui.js', 'main.js']
+const scripts = ['questions.js', 'questions2.js', 'questions3.js', 'core.js', 'map.js', 'scenery.js', 'traffic.js', 'traffic2.js', 'player.js', 'rules.js', 'render.js', 'render2.js', 'ui.js', 'main.js']
   .map(src).join('\n') + '\nboot();\n';
 const page = src('game.html')
   .replace('/*STYLES*/', () => src('styles.css'))

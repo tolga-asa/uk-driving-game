@@ -38,9 +38,17 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
 .gear { grid-column: 1 / -1; text-align: center; font: 600 12px/1 var(--display); letter-spacing: .2em; color: var(--muted); margin-top: 2px; }
 .limit-sign { width: 62px; height: 62px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 7px var(--sign-red), 0 2px 8px rgba(0,0,0,.35);
   display: grid; place-items: center; color: #111; font: 700 26px/1 var(--display); position: relative; overflow: hidden; }
-.limit-sign[data-limit="60"] { box-shadow: inset 0 0 0 2px #111, 0 2px 8px rgba(0,0,0,.35); }
-.limit-sign[data-limit="60"]::after { content: ''; position: absolute; width: 140%; height: 10px; background: #111; transform: rotate(-45deg); }
+.limit-sign[data-limit="nsl"] { box-shadow: inset 0 0 0 2px #111, 0 2px 8px rgba(0,0,0,.35); }
+.limit-sign[data-limit="nsl"]::after { content: ''; position: absolute; width: 140%; height: 10px; background: #111; transform: rotate(-45deg); }
 
+.road-label { position: fixed; z-index: 5; top: calc(118px + env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); pointer-events: none;
+  display: grid; gap: 2px; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.road-label b { font: 700 22px/1 var(--display); letter-spacing: .02em; }
+.road-label span { font: 600 12px/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--route-yellow); }
+.limiter { align-self: center; background: var(--sign-blue); border: 2px solid #fff; border-radius: 6px; padding: 4px 8px; font: 700 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
+.title-opts { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-bottom: 16px; }
+.title-opts label { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.title-opts select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: #1d242e; color: var(--text); }
 .hud-tr { top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: 170px; display: grid; gap: 8px; }
 #minimap { width: 170px; height: 170px; border-radius: 10px; border: 2px solid rgba(255,255,255,.7); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
 .tally { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
@@ -172,6 +180,7 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
   .faults { width: calc(100vw - 164px); left: max(12px, env(safe-area-inset-left, 0px)); transform: none; top: calc(110px + env(safe-area-inset-top, 0px)); }
   .fault-msg { font-size: 14px; } .fault-tip { font-size: 12px; }
   .speed { font-size: 38px; } .limit-sign { width: 48px; height: 48px; font-size: 20px; }
+  .road-label { top: calc(96px + env(safe-area-inset-top, 0px)); } .road-label b { font-size: 17px; }
   .keys { display: none; }
   .hud-bl { bottom: calc(152px + env(safe-area-inset-bottom, 0px)); }
   .tip { bottom: calc(196px + env(safe-area-inset-bottom, 0px)); font-size: 13px; padding: 8px 10px; }
@@ -197,7 +206,9 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
     <div class="gear" id="gear">D</div>
   </div>
   <div class="limit-sign" id="limitSign" data-limit="30" title="Current speed limit"><span>30</span></div>
+  <div class="limiter" id="limiter" hidden>Limiter</div>
 </div>
+<div class="road-label" aria-live="polite"><b id="roadName"></b><span id="district"></span></div>
 
 <div class="hud hud-tr">
   <canvas id="minimap" width="200" height="200" aria-label="Map"></canvas>
@@ -220,7 +231,7 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
 <div id="tip" class="tip" hidden><b>i</b><span id="tipText"></span></div>
 
 <div class="hud hud-bl">
-  <div class="keys"><kbd>↑↓←→</kbd> drive <kbd>Q</kbd><kbd>E</kbd> indicate <kbd>Space</kbd> handbrake <kbd>H</kbd> horn <kbd>C</kbd> camera</div>
+  <div class="keys"><kbd>↑↓←→</kbd> drive <kbd>Q</kbd><kbd>E</kbd> indicate <kbd>Space</kbd> handbrake <kbd>L</kbd> limiter <kbd>K</kbd> lane assist <kbd>C</kbd> camera</div>
   <div class="btns"><button id="pauseBtn" class="chip">Pause &amp; test sheet <kbd>P</kbd></button><button id="quizBtn" class="chip">Theory question <kbd>T</kbd></button></div>
 </div>
 
@@ -249,6 +260,8 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
     <div class="settings">
       <label for="qInterval">Theory questions
         <select id="qInterval"><option value="45">Every 45 s</option><option value="75">Every 75 s</option><option value="120">Every 2 min</option><option value="240">Every 4 min</option><option value="0">Off (press T)</option></select></label>
+      <label for="assistMode">Lane assist
+        <select id="assistMode"><option value="strong">Strong: keeps you centred</option><option value="light">Light: lines you up</option><option value="off">Off</option></select></label>
       <label for="camMode">Camera
         <select id="camMode"><option value="chase">Behind the car</option><option value="north">North up (map)</option></select></label>
       <label class="check" for="tipsOn"><input type="checkbox" id="tipsOn"> Coaching tips</label>
@@ -262,7 +275,7 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
   <div class="title-card">
     <div class="brand">
       <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48" fill="#0b5cad" stroke="#fff" stroke-width="4"/><g transform="rotate(45 50 50)" fill="#fff"><rect x="43" y="20" width="14" height="36"/><path d="M27 52 H73 L50 80 Z"/></g></svg>
-      <div><h1>Keep Left</h1><p>Drive round a small English town and pass the theory on the way.</p></div>
+      <div><h1>Keep Left</h1><p>Suburbs, a city centre, a 70 mph dual carriageway and country lanes. Practise the roads, pass the theory on the way.</p></div>
     </div>
     <div class="cols">
       <section>
@@ -284,11 +297,19 @@ kbd { font: 600 12px/1 var(--display); letter-spacing: .04em; padding: 3px 6px; 
           <tr><td><kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd></td><td>Steer</td></tr>
           <tr><td><kbd>Q</kbd> / <kbd>E</kbd></td><td>Left / right indicator</td></tr>
           <tr><td><kbd>Space</kbd></td><td>Handbrake (slides)</td></tr>
+          <tr><td><kbd>L</kbd></td><td>Speed limiter (holds you at the limit)</td></tr>
+          <tr><td><kbd>K</kbd></td><td>Lane assist: strong, light or off</td></tr>
           <tr><td><kbd>C</kbd></td><td>Camera: behind car or map</td></tr>
           <tr><td><kbd>P</kbd> / <kbd>T</kbd></td><td>Test sheet / theory question</td></tr>
         </table>
-        <p class="note">Faults are marked like the real practical test. A theory question pops up every 75 seconds, and after a mistake it asks about the rule you broke.</p>
+        <p class="note">Faults are marked like the real practical test. A theory question pops up every 75 seconds, and after a mistake it asks about the rule you broke. Tap the arrow keys for small corrections; the steering eases in like a real wheel.</p>
       </section>
+    </div>
+    <div class="title-opts">
+      <label for="startAt">Start in
+        <select id="startAt"><option value="suburb">Ashford Green (suburbs)</option><option value="city">Kingsgate (city centre)</option><option value="bypass">Near the A40 bypass</option><option value="village">Little Mardon (village)</option></select></label>
+      <label for="assistTitle">Lane assist
+        <select id="assistTitle"><option value="strong">Strong</option><option value="light">Light</option><option value="off">Off</option></select></label>
     </div>
     <button id="startBtn" class="go big">Start driving</button>
   </div>
@@ -543,20 +564,78 @@ QUESTIONS.push(
     e: 'You pass with 15 or fewer driving faults and no serious or dangerous faults. This game scores you the same way.' },
 );
 
-// World: a small English town on a grid, ringed by a 60 mph A-road with countryside outside.
-// Units are metres. Screen-style axes: +x east, +y south. Angles: 0 = east, 90° = south,
-// so increasing angle is clockwise on screen (the way UK roundabouts flow).
-const W = 9;               // carriageway width: two 4.5 m lanes
-const LANE = W / 4;        // lane centre offset from the centre line
-const PAVE = 3;            // pavement width
-const SP = 150;            // distance between junctions
-const NX = 6, NY = 5;      // junction grid
-const MARGIN = 130;        // countryside outside the ring road
-const RB_IN = 6, RB_OUT = 15, RB_LANE = 10.5;
-const MPH = 2.23694;       // m/s → mph
-const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];  // E S W N
-const DIR_NAMES = ['east', 'south', 'west', 'north'];
-const WORLD_W = MARGIN * 2 + (NX - 1) * SP, WORLD_H = MARGIN * 2 + (NY - 1) * SP;
+// Questions for the features added with the bigger map: city streets, bypass, country lanes, level crossings.
+QUESTIONS.push(
+  { t: 'signs', q: 'When may you drive in a bus lane?',
+    a: ['Outside the hours shown on its blue sign', 'Whenever no bus is in sight', 'Never', 'Only at weekends'], c: 0,
+    e: 'Check the times on the blue sign. If no times are shown, it operates 24 hours (Rule 141). Cameras issue fines.' },
+  { t: 'junction', q: 'You will turn right from a one-way street with two lanes. Which lane should you use?',
+    a: ['The right-hand lane', 'The left-hand lane', 'Either, it does not matter', 'Straddle both'], c: 0,
+    e: 'In one-way streets use the right-hand lane to go right and the left-hand lane to go left (Rule 143).' },
+  { t: 'keepleft', q: 'In a one-way street, on which side may other traffic pass you?',
+    a: ['Either side', 'Only the right', 'Only the left', 'Neither'], c: 0,
+    e: 'In one-way streets vehicles may pass on either side, so check both mirrors (Rule 143).' },
+  { t: 'lights', q: 'The light is red and there is an advanced stop line (a cyclists\' box). Where do you stop?',
+    a: ['At the first white line, behind the box', 'At the second line, inside the box', 'Anywhere in the box', 'Level with the lights'], c: 0,
+    e: 'You MUST stop at the first white line when the light is amber or red. The box is for cyclists (Rule 178).' },
+  { t: 'general', q: 'At a level crossing, the amber light comes on, then twin red lights flash. What do you do?',
+    a: ['Stop, and keep waiting while the red lights flash', 'Speed up to cross before the barrier', 'Cross if you cannot see a train', 'Zigzag round the barriers'], c: 0,
+    e: 'Amber then flashing red means a train is coming. Stop at the white line. Keep waiting if they keep flashing (Rule 293).' },
+  { t: 'general', q: 'Your car breaks down on a level crossing. What should you do first?',
+    a: ['Get everyone out and clear of the crossing', 'Try to restart the engine', 'Push the car off', 'Wait inside with hazard lights on'], c: 0,
+    e: 'Get everyone out and well clear, then use the railway telephone to tell the signal operator (Rule 299).' },
+  { t: 'keepleft', q: 'On a single-track road a car comes the other way. What should you do?',
+    a: ['Pull into a passing place on your left, or wait opposite one on your right', 'Reverse to the nearest junction', 'Drive onto the verge', 'Flash your lights and keep going'], c: 0,
+    e: 'Pull into a passing place on your left, or wait opposite one on your right, to let them pass (Rule 155).' },
+  { t: 'law', q: 'May you park in a passing place on a single-track road?',
+    a: ['No', 'Yes, for up to 10 minutes', 'Yes, at night', 'Only to take photos'], c: 0,
+    e: 'Do not park in passing places. Other drivers need them (Rule 155).' },
+  { t: 'junction', q: 'You want to turn right across a dual carriageway, but the central gap is too small for your car. What do you do?',
+    a: ['Wait until you can cross both carriageways in one go', 'Wait in the gap with your back end sticking out', 'Turn left and U-turn later in the road', 'Cross the first half and stop'], c: 0,
+    e: 'If the central reservation is too narrow for your vehicle, wait until it is safe to cross both carriageways in one go (Rule 173).' },
+  { t: 'keepleft', q: 'On a dual carriageway with two lanes, which lane should you normally use?',
+    a: ['The left lane; the right lane is for overtaking or turning right', 'The right lane at 70 mph', 'Either lane', 'The lane with less traffic'], c: 0,
+    e: 'Use the left lane. The right lane is for overtaking or turning right (Rule 137).' },
+  { t: 'roundabout', q: 'There are lane arrows painted on the approach to a big roundabout. What should you do?',
+    a: ['Get into the lane for your exit early and follow the markings round', 'Ignore them and pick the shortest line', 'Use the right lane for all exits', 'Change lanes on the roundabout when needed'], c: 0,
+    e: 'Choose your lane early from the signs and markings, and stay in it on the roundabout (Rule 186).' },
+  { t: 'roundabout', q: 'At double mini-roundabouts, what should you do?',
+    a: ['Treat each one separately and give way to traffic from the right at each', 'Treat them as one big roundabout', 'Drive straight across both', 'Give way only at the first'], c: 0,
+    e: 'Treat each roundabout separately and give way to traffic from the right (Rule 189).' },
+  { t: 'speed', q: 'You drive through a road with speed humps. What should you do?',
+    a: ['Keep your speed down and do not overtake', 'Speed up between humps', 'Drive on the pavement to avoid them', 'Straddle the centre line'], c: 0,
+    e: 'Traffic-calming features are there to slow you down. Keep to a reduced speed and do not overtake moving vehicles (Rule 153).' },
+  { t: 'junction', q: 'Cars are parked on your side of the road and a car is coming the other way. Who should go first?',
+    a: ['The oncoming car, because the obstruction is on your side', 'You, because you were there first', 'Whoever is faster', 'The bigger vehicle'], c: 0,
+    e: 'Give way to oncoming vehicles before passing parked cars or other obstructions on your side of the road (Rule 163).' },
+  { t: 'signs', q: 'A blue square sign shows a large white arrow up and a small red arrow down. What does it mean?',
+    a: ['You have priority over vehicles coming the other way', 'Give way to oncoming vehicles', 'Two-way traffic ahead', 'One-way street'], c: 0,
+    e: 'Blue square = you have priority through the narrow section. The red-ringed version means you must give way to oncoming traffic.' },
+  { t: 'signs', q: 'A red-ringed circle shows a red arrow up and a black arrow down. What does it mean?',
+    a: ['Give way to vehicles coming the other way', 'You have priority', 'No U-turns', 'Two-way traffic crosses a one-way road'], c: 0,
+    e: 'Circles give orders: this one means give priority to oncoming traffic, usually at a pinch point or narrow bridge.' },
+  { t: 'safety', q: 'You are stuck behind a slow tractor on a winding country road. What should you do?',
+    a: ['Hang back and overtake only when you can see enough clear road ahead', 'Overtake on the next bend', 'Sound your horn until it pulls over', 'Follow closely so you can pass quickly'], c: 0,
+    e: 'Be patient. Only overtake when you can see far enough ahead to do it safely, never on bends or near junctions (Rules 162-167).' },
+  { t: 'general', q: 'What does a flashing amber beacon on a vehicle mean?',
+    a: ['It is a slow-moving vehicle', 'It is an emergency vehicle', 'It is about to turn', 'It has broken down'], c: 0,
+    e: 'Flashing amber beacons warn of slow-moving vehicles such as tractors and road gritters (Rule 225).' },
+  { t: 'crossing', q: 'How does a puffin crossing differ from a pelican crossing?',
+    a: ['No flashing amber: sensors hold the red while people cross, then it goes red-amber-green', 'It has no lights', 'It is only for cyclists', 'It always shows flashing amber'], c: 0,
+    e: 'Puffin crossings use the normal light sequence; sensors keep cars on red until people have crossed (Rule 199).' },
+  { t: 'speed', q: 'What is the default speed limit on most restricted roads in Wales since 2023?',
+    a: ['20 mph', '30 mph', '25 mph', '40 mph'], c: 0,
+    e: 'Since September 2023 the default limit on most roads with street lights in Wales is 20 mph. England and Scotland mostly use 30 mph.' },
+);
+
+// Road network core. Roads are polylines with lanes; junctions are nodes where roads meet.
+// Units are metres. Screen axes: +x east, +y south. Angles: 0 = east, increasing clockwise on screen
+// (the way UK roundabouts flow). `lat` on a road is the sideways offset, positive = left of the a→b direction.
+const MPH = 2.23694;
+const LANE_W = 3.4, PAVE = 3;
+const TAU = Math.PI * 2;
+const world = { nodes: [], edges: [], buildings: [], trees: [], parked: [], crossings: [], levelX: [], fields: [],
+  signs: [], obstacles: [], rail: null, trains: [], W: 2100, H: 1600 };
 
 function rng(seed) {
   return function () {
@@ -566,495 +645,974 @@ function rng(seed) {
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
-// Left of a travel direction (y-down): facing east, left is north.
 const leftOf = (d) => [d[1], -d[0]];
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
+function angDiff(a, b) { let d = (a - b) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; }
 
-const world = { nodes: [], edges: [], blocks: [], buildings: [], trees: [], zebras: [], fields: [], signs: [] };
-
-function buildWorld() {
-  const R = rng(20240917);
-  const node = (i, j) => world.nodes[j * NX + i];
-  world.node = node;
-
-  // Junction types. Interior layout chosen so every type turns up within a minute of driving.
-  const interior = {
-    '1,1': 'lights', '2,1': 'give', '3,1': 'rb', '4,1': 'lights',
-    '1,2': 'rb', '2,2': 'lights', '3,2': 'give', '4,2': 'rb',
-    '1,3': 'give', '2,3': 'rb', '3,3': 'lights', '4,3': 'give',
-  };
-  const ringRb = { '0,2': 'rb', '5,2': 'rb', '3,0': 'rb', '2,4': 'rb' };
-  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
-    const onRing = i === 0 || j === 0 || i === NX - 1 || j === NY - 1;
-    const corner = (i === 0 || i === NX - 1) && (j === 0 || j === NY - 1);
-    let type = corner ? 'bend' : onRing ? (ringRb[i + ',' + j] || 'give') : interior[i + ',' + j];
-    const n = { i, j, x: MARGIN + i * SP, y: MARGIN + j * SP, type, arms: [], edges: [null, null, null, null],
-      phase: R() * 33, onRing };
-    // Major road at give-way junctions: the ring road on the ring, alternating axes inside.
-    n.major = onRing ? (i === 0 || i === NX - 1 ? 1 : 0) : (i + j) % 2;
-    n.r = type === 'rb' ? RB_OUT : W / 2;
-    world.nodes.push(n);
-  }
-
-  const addEdge = (a, b, dir) => {
-    const ringEdge = (a.onRing && b.onRing) && (a.i === b.i ? (a.i === 0 || a.i === NX - 1) : (a.j === 0 || a.j === NY - 1));
-    const e = { a, b, dir, ring: ringEdge, limit: ringEdge ? 60 : 30, zebra: null, id: world.edges.length };
-    a.edges[dir] = e; b.edges[(dir + 2) % 4] = e;
-    a.arms.push(dir); b.arms.push((dir + 2) % 4);
-    world.edges.push(e);
-  };
-  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
-    if (i < NX - 1) addEdge(node(i, j), node(i + 1, j), 0);
-    if (j < NY - 1) addEdge(node(i, j), node(i, j + 1), 1);
-  }
-  // School street: 20 mph. Zebra crossings on some town streets.
-  const school = [node(2, 2).edges[0], node(2, 1).edges[1]];
-  school.forEach(e => e.limit = 20);
-  const zebraEdges = [node(1, 1).edges[0], node(2, 2).edges[0], node(3, 2).edges[1], node(1, 2).edges[1],
-    node(4, 2).edges[1], node(2, 3).edges[0], node(3, 1).edges[0], node(1, 3).edges[0]];
-  for (const e of zebraEdges) {
-    const len = SP - e.a.r - e.b.r;
-    const t = e.a.r + len * (0.42 + R() * 0.16);
-    const d = DIRS[e.dir];
-    e.zebra = { edge: e, x: e.a.x + d[0] * t, y: e.a.y + d[1] * t, horiz: e.dir === 0, along: t, flash: R() };
-    world.zebras.push(e.zebra);
-  }
-
-  // Blocks between roads. Town inside the ring, fields outside.
-  for (let j = -1; j < NY; j++) for (let i = -1; i < NX; i++) {
-    const x0 = i < 0 ? 0 : MARGIN + i * SP + W / 2, x1 = i >= NX - 1 ? WORLD_W : MARGIN + (i + 1) * SP - W / 2;
-    const y0 = j < 0 ? 0 : MARGIN + j * SP + W / 2, y1 = j >= NY - 1 ? WORLD_H : MARGIN + (j + 1) * SP - W / 2;
-    const town = i >= 0 && j >= 0 && i < NX - 1 && j < NY - 1;
-    const b = { x0, y0, x1, y1, town, i, j, kind: 'houses' };
-    world.blocks.push(b);
-    if (town) fillTownBlock(b, R); else fillField(b, R);
-  }
-  // Signs: a speed-limit sign facing each direction at the start of every street.
-  for (const e of world.edges) for (const fwd of [true, false]) {
-    const from = fwd ? e.a : e.b, d = fwd ? DIRS[e.dir] : DIRS[(e.dir + 2) % 4], l = leftOf(d);
-    const t = from.r + 9;
-    world.signs.push({ kind: 'limit', limit: e.limit, x: from.x + d[0] * t + l[0] * (W / 2 + 1.6), y: from.y + d[1] * t + l[1] * (W / 2 + 1.6) });
-  }
-  for (const n of world.nodes) for (const arm of n.arms) {
-    const d = DIRS[arm], l = leftOf([-d[0], -d[1]]);   // left side for traffic approaching along this arm
-    const t = n.r + 4;
-    const pos = { x: n.x + d[0] * t + l[0] * (W / 2 + 1.6), y: n.y + d[1] * t + l[1] * (W / 2 + 1.6) };
-    if (n.type === 'rb') world.signs.push({ kind: 'giveway', ...pos });
-    else if (n.type === 'give' && arm % 2 !== n.major) world.signs.push({ kind: 'giveway', ...pos });
-  }
+function addNode(x, y, type = 'give', o = {}) {
+  const n = { id: world.nodes.length, x, y, type, arms: [], r: 0, phase: 0, pave: true, ...o };
+  world.nodes.push(n);
+  return n;
 }
 
-function fillTownBlock(b, R) {
-  const w = b.x1 - b.x0, h = b.y1 - b.y0;
-  const inner = { x0: b.x0 + PAVE, y0: b.y0 + PAVE, x1: b.x1 - PAVE, y1: b.y1 - PAVE };
-  const special = { '1,1': 'park', '2,1': 'school', '3,2': 'shops', '0,2': 'church', '4,0': 'shops', '2,3': 'park' }[b.i + ',' + b.j];
-  if (special) b.kind = special;
-  if (b.kind === 'park') {
-    for (let k = 0; k < 26; k++) world.trees.push({ x: inner.x0 + 10 + R() * (w - 26), y: inner.y0 + 10 + R() * (h - 26), r: 3 + R() * 2.5 });
-    b.pond = { x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2, rx: 18, ry: 11 };
-    return;
-  }
-  if (b.kind === 'school') {
-    world.buildings.push({ x: inner.x0 + 22, y: inner.y0 + 20, w: 60, h: 30, roof: '#8a8f99', label: 'SCHOOL' });
-    world.buildings.push({ x: inner.x0 + 22, y: inner.y0 + 50, w: 20, h: 30, roof: '#8a8f99' });
-    b.pitch = { x: inner.x0 + 60, y: inner.y0 + 70, w: 50, h: 38 };
-    return;
-  }
-  if (b.kind === 'church') {
-    world.buildings.push({ x: inner.x0 + 45, y: inner.y0 + 40, w: 40, h: 18, roof: '#6d6a63', label: '✝' });
-    world.buildings.push({ x: inner.x0 + 37, y: inner.y0 + 43, w: 9, h: 12, roof: '#5b5852' });
-    for (let k = 0; k < 10; k++) world.trees.push({ x: inner.x0 + 8 + R() * (w - 20), y: inner.y0 + 75 + R() * 40, r: 2.5 + R() * 2 });
-  }
-  // Terraced houses along each side, set back from the pavement, gardens behind.
-  const roofs = b.kind === 'shops' ? ['#3d5a80', '#9c2c2c', '#2a6f4f', '#7a5c2e', '#4b3f72'] : ['#7d3b2f', '#8c4a36', '#6e3428', '#5d5f63', '#9a5a40', '#6b4a3a'];
-  const setback = 4, depth = b.kind === 'shops' ? 16 : 10;
-  const corner = 12;
-  const row = (horizontal, fixed, from, to, facingNeg) => {
-    let p = from;
-    while (p < to - 6) {
-      const bw = (b.kind === 'shops' ? 9 : 6) + R() * 3;
-      if (p + bw > to) break;
-      const roof = roofs[(R() * roofs.length) | 0];
-      if (horizontal) world.buildings.push({ x: p, y: facingNeg ? fixed : fixed - depth, w: bw - 0.4, h: depth, roof, shop: b.kind === 'shops' });
-      else world.buildings.push({ x: facingNeg ? fixed : fixed - depth, y: p, w: depth, h: bw - 0.4, roof, shop: b.kind === 'shops' });
-      p += bw;
-      if (R() < 0.12) p += 3 + R() * 4;   // a gap between terraces
-    }
-  };
-  if (b.kind !== 'church') row(true, inner.y0 + setback, inner.x0 + corner, inner.x1 - corner, true);
-  row(true, inner.y1 - setback, inner.x0 + corner, inner.x1 - corner, false);
-  row(false, inner.x0 + setback, inner.y0 + corner + depth, inner.y1 - corner - depth, true);
-  row(false, inner.x1 - setback, inner.y0 + corner + depth, inner.y1 - corner - depth, false);
-  for (let k = 0; k < 6; k++) world.trees.push({ x: inner.x0 + 30 + R() * (w - 60), y: inner.y0 + 30 + R() * (h - 60), r: 2 + R() * 2 });
-}
-
-function fillField(b, R) {
-  b.kind = 'field';
-  const greens = ['#7fa457', '#8bb060', '#9bb86a', '#c9b56a', '#86a95a'];
-  // Split into a few fields bounded by hedges.
-  const cols = Math.max(1, Math.round((b.x1 - b.x0) / 75)), rows = Math.max(1, Math.round((b.y1 - b.y0) / 75));
-  for (let a = 0; a < cols; a++) for (let c = 0; c < rows; c++) {
-    const fx0 = b.x0 + (b.x1 - b.x0) * a / cols, fx1 = b.x0 + (b.x1 - b.x0) * (a + 1) / cols;
-    const fy0 = b.y0 + (b.y1 - b.y0) * c / rows, fy1 = b.y0 + (b.y1 - b.y0) * (c + 1) / rows;
-    world.fields.push({ x0: fx0 + 3, y0: fy0 + 3, x1: fx1 - 3, y1: fy1 - 3, color: greens[(R() * greens.length) | 0], rows: R() < 0.4 });
-  }
-  for (let k = 0; k < 8; k++) {
-    const x = b.x0 + 8 + R() * (b.x1 - b.x0 - 16), y = b.y0 + 8 + R() * (b.y1 - b.y0 - 16);
-    world.trees.push({ x, y, r: 3 + R() * 3 });
-  }
-}
-
-// ---- Traffic lights. Axis 0 = east-west arms, 1 = north-south arms.
-// UK sequence: red → red+amber → green → amber → red.
-const LIGHT_CYCLE = 33;
-function lightState(n, axis, time) {
-  const t = (time + n.phase) % LIGHT_CYCLE;
-  const a = t < 2 ? 'RA' : t < 12 ? 'G' : t < 15 ? 'A' : 'R';
-  const b = t < 16.5 ? 'R' : t < 18.5 ? 'RA' : t < 28.5 ? 'G' : t < 31.5 ? 'A' : 'R';
-  return axis === 0 ? a : b;
-}
-
-// ---- Location queries
-function nodeAtPoint(x, y) {
-  const i = Math.round((x - MARGIN) / SP), j = Math.round((y - MARGIN) / SP);
-  if (i < 0 || j < 0 || i >= NX || j >= NY) return null;
-  const n = world.node(i, j);
-  const dx = x - n.x, dy = y - n.y;
-  if (n.type === 'rb') return dx * dx + dy * dy < (RB_OUT + 0.5) ** 2 ? n : null;
-  return Math.abs(dx) <= W / 2 + 0.3 && Math.abs(dy) <= W / 2 + 0.3 ? n : null;
-}
-// The street under a point: { edge, lat (signed offset from centre line, + = south/east), along }.
-function edgeAtPoint(x, y) {
-  const fi = (x - MARGIN) / SP, fj = (y - MARGIN) / SP;
-  const j = Math.round(fj), i = Math.round(fi);
-  if (j >= 0 && j < NY && Math.abs(y - (MARGIN + j * SP)) <= W / 2 + 0.2) {
-    const i0 = Math.floor(fi);
-    if (i0 >= 0 && i0 < NX - 1) {
-      const e = world.node(i0, j).edges[0];
-      const along = x - e.a.x;
-      if (along > e.a.r && along < SP - e.b.r) return { edge: e, lat: y - e.a.y, along };
+// Catmull-Rom through the control points, sampled every `step` metres.
+function sampleCurve(ctrl, step) {
+  const out = [ctrl[0].slice()];
+  for (let i = 0; i < ctrl.length - 1; i++) {
+    const p0 = ctrl[Math.max(0, i - 1)], p1 = ctrl[i], p2 = ctrl[i + 1], p3 = ctrl[Math.min(ctrl.length - 1, i + 2)];
+    const n = Math.max(2, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+    for (let k = 1; k <= n; k++) {
+      const t = k / n, t2 = t * t, t3 = t2 * t;
+      const f = (a, b, c, d) => 0.5 * ((2 * b) + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+      out.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]);
     }
   }
-  if (i >= 0 && i < NX && Math.abs(x - (MARGIN + i * SP)) <= W / 2 + 0.2) {
-    const j0 = Math.floor(fj);
-    if (j0 >= 0 && j0 < NY - 1) {
-      const e = world.node(i, j0).edges[1];
-      const along = y - e.a.y;
-      if (along > e.a.r && along < SP - e.b.r) return { edge: e, lat: x - e.a.x, along };
+  return out;
+}
+
+function addRoad(a, b, o = {}) {
+  const e = { id: world.edges.length, a, b, lanesF: 1, lanesB: 1, laneW: LANE_W, median: 0, limit: 30, kind: 'town',
+    rank: 1, pave: true, busF: false, busB: false, name: '', humps: [], bays: [], ...o };
+  if (e.oneway) e.lanesB = 0;
+  e.W = (e.lanesF + e.lanesB) * e.laneW + e.median;
+  e.div = (e.lanesB - e.lanesF) * e.laneW / 2;          // lat of the line between the two directions
+  const ctrl = [[a.x, a.y], ...(o.via || []), [b.x, b.y]];
+  e.pts = ctrl.length > 2 ? sampleCurve(ctrl, 4) : ctrl.map(p => p.slice());
+  e.cum = [0];
+  for (let k = 1; k < e.pts.length; k++) e.cum.push(e.cum[k - 1] + Math.hypot(e.pts[k][0] - e.pts[k - 1][0], e.pts[k][1] - e.pts[k - 1][1]));
+  e.len = e.cum[e.cum.length - 1];
+  const p = e.pts, m = p.length - 1;
+  a.arms.push({ e, end: 'a', node: a, ang: Math.atan2(p[1][1] - p[0][1], p[1][0] - p[0][0]) });
+  b.arms.push({ e, end: 'b', node: b, ang: Math.atan2(p[m - 1][1] - p[m][1], p[m - 1][0] - p[m][0]) });
+  world.edges.push(e);
+  return e;
+}
+
+const lanesOf = (e, dir) => dir > 0 ? e.lanesF : e.lanesB;
+const laneLat = (e, dir, i) => dir > 0 ? e.W / 2 - (i + 0.5) * e.laneW : -e.W / 2 + (i + 0.5) * e.laneW;
+const isBusLane = (e, dir, i) => i === 0 && (dir > 0 ? e.busF : e.busB);
+// Arm helpers. Arriving at a node along an arm means driving towards that end.
+const dirIn = (arm) => arm.end === 'a' ? -1 : 1;
+const sFrom = (arm, d) => arm.end === 'a' ? d : arm.e.len - d;
+const canEnter = (arm) => lanesOf(arm.e, dirIn(arm)) > 0;     // traffic can arrive at the node on this arm
+const canExit = (arm) => lanesOf(arm.e, -dirIn(arm)) > 0;     // traffic can leave the node on this arm
+
+function segIndex(e, s) {
+  let lo = 0, hi = e.cum.length - 2;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (e.cum[mid] <= s) lo = mid; else hi = mid - 1; }
+  return lo;
+}
+function pointAt(e, s, lat = 0) {
+  s = clamp(s, 0, e.len);
+  const k = segIndex(e, s), a = e.pts[k], b = e.pts[k + 1];
+  const L = (e.cum[k + 1] - e.cum[k]) || 1, t = (s - e.cum[k]) / L;
+  const tx = (b[0] - a[0]) / L, ty = (b[1] - a[1]) / L;
+  return { x: a[0] + (b[0] - a[0]) * t + ty * lat, y: a[1] + (b[1] - a[1]) * t - tx * lat, ang: Math.atan2(ty, tx) };
+}
+
+function finalizeNodes() {
+  for (const n of world.nodes) {
+    n.arms.sort((p, q) => p.ang - q.ang);
+    const maxW = Math.max(...n.arms.map(a => a.e.W / 2));
+    if (n.type === 'rb') { n.r = n.ringR + 0.6; n.islandR = n.ringR - n.ringLanes * LANE_W - 0.4; }
+    else if (n.type === 'mini') { n.ringR = maxW + 2.6; n.r = n.ringR; n.islandR = 1.6; n.ringLanes = 1; }
+    else if (n.arms.length <= 2) { n.r = 0.5; if (n.type !== 'gateway') n.type = 'bend'; }
+    else {
+      n.r = maxW + 1.2;
+      for (let i = 0; i < n.arms.length; i++) {
+        const g = Math.abs(angDiff(n.arms[(i + 1) % n.arms.length].ang, n.arms[i].ang));
+        if (g < 1.3) n.r = Math.max(n.r, (maxW + 1) / Math.tan(g / 2));
+      }
     }
+    // Priority: arms on the highest-ranked roads are the major road.
+    const top = Math.max(...n.arms.map(a => a.e.rank));
+    for (const a of n.arms) a.major = n.type === 'unmarked' ? false : a.e.rank === top && n.arms.filter(b => b.e.rank === top).length <= 2;
+    // Traffic-light groups: opposite arms share a phase.
+    if (n.type === 'lights' || n.signals) {
+      let g = 0;
+      for (const a of n.arms) a.group = undefined;
+      for (const a of n.arms) {
+        if (a.group !== undefined) continue;
+        a.group = g;
+        for (const b of n.arms) if (b.group === undefined && Math.abs(angDiff(b.ang, a.ang + Math.PI)) < 0.75) b.group = g;
+        g++;
+      }
+      n.groups = g;
+    }
+  }
+}
+
+// ---- Signals. UK sequence: red → red+amber → green → amber → red.
+const PHASE = 15.5;
+function lightState(n, arm, t) {
+  const T = n.groups * PHASE, tt = ((t + n.phase) % T + T) % T, idx = Math.floor(tt / PHASE), local = tt - idx * PHASE;
+  if (idx !== arm.group) return 'R';
+  return local < 2 ? 'RA' : local < 11 ? 'G' : local < 14 ? 'A' : 'R';
+}
+function puffinState(c, t) {           // signal for traffic at a puffin crossing
+  const tt = ((t + c.phase) % 29 + 29) % 29;
+  return tt < 14 ? 'G' : tt < 17 ? 'A' : tt < 27 ? 'R' : 'RA';
+}
+
+// ---- Spatial index
+const CELL = 24, grid = new Map();
+const gkey = (i, j) => i * 8192 + j;
+function gadd(x0, y0, x1, y1, item) {
+  for (let i = Math.floor(x0 / CELL); i <= Math.floor(x1 / CELL); i++)
+    for (let j = Math.floor(y0 / CELL); j <= Math.floor(y1 / CELL); j++) {
+      const k = gkey(i, j); let l = grid.get(k); if (!l) grid.set(k, l = []); l.push(item);
+    }
+}
+const gget = (x, y) => grid.get(gkey(Math.floor(x / CELL), Math.floor(y / CELL))) || [];
+function buildIndex() {
+  grid.clear();
+  for (const e of world.edges) for (let k = 0; k < e.pts.length - 1; k++) {
+    const a = e.pts[k], b = e.pts[k + 1], m = e.W / 2 + PAVE + 2;
+    gadd(Math.min(a[0], b[0]) - m, Math.min(a[1], b[1]) - m, Math.max(a[0], b[0]) + m, Math.max(a[1], b[1]) + m, { t: 'e', e, k });
+  }
+  for (const n of world.nodes) gadd(n.x - n.r - PAVE, n.y - n.r - PAVE, n.x + n.r + PAVE, n.y + n.r + PAVE, { t: 'n', n });
+  for (const h of world.buildings) { const m = Math.hypot(h.w, h.h) / 2; gadd(h.x - m, h.y - m, h.x + m, h.y + m, { t: 'b', h }); }
+}
+
+// Nearest road under a point: { e, s, lat, ang, dist } (dist = |lat|), or null if none near.
+function roadAt(x, y) {
+  let best = null;
+  for (const it of gget(x, y)) {
+    if (it.t !== 'e') continue;
+    const e = it.e, a = e.pts[it.k], b = e.pts[it.k + 1];
+    const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1;
+    const u = ((x - a[0]) * dx + (y - a[1]) * dy) / L2;
+    if (u < -0.02 || u > 1.02) continue;
+    const L = Math.sqrt(L2), tx = dx / L, ty = dy / L;
+    const lat = (x - a[0]) * ty - (y - a[1]) * tx;
+    const dist = Math.abs(lat);
+    if (dist > e.W / 2 + PAVE + 1.5) continue;
+    if (!best || dist - e.W / 2 < best.dist - best.e.W / 2) best = { e, s: e.cum[it.k] + clamp(u, 0, 1) * L, lat, ang: Math.atan2(ty, tx), dist };
+  }
+  return best;
+}
+function nodeAt(x, y, pad = 0) {
+  for (const it of gget(x, y)) if (it.t === 'n') { const n = it.n; if ((x - n.x) ** 2 + (y - n.y) ** 2 < (n.r + pad) ** 2) return n; }
+  return null;
+}
+function buildingAt(x, y, pad = 0) {
+  for (const it of gget(x, y)) {
+    if (it.t !== 'b') continue;
+    const h = it.h, c = Math.cos(h.ang), s = Math.sin(h.ang), dx = x - h.x, dy = y - h.y;
+    const u = dx * c + dy * s, v = -dx * s + dy * c;
+    if (Math.abs(u) < h.w / 2 + pad && Math.abs(v) < h.h / 2 + pad) return h;
   }
   return null;
 }
 function surfaceAt(x, y) {
-  if (nodeAtPoint(x, y)) {
-    const n = nodeAtPoint(x, y);
-    if (n.type === 'rb' && Math.hypot(x - n.x, y - n.y) < RB_IN) return 'island';
+  if (x < 2 || y < 2 || x > world.W - 2 || y > world.H - 2) return 'wall';
+  const n = nodeAt(x, y);
+  if (n) {
+    const d = Math.hypot(x - n.x, y - n.y);
+    if (n.type === 'rb' && d < n.islandR) return 'island';
+    if (n.type === 'mini' && d < n.islandR) return 'mini';
     return 'road';
   }
-  if (edgeAtPoint(x, y)) return 'road';
-  if (x < 2 || y < 2 || x > WORLD_W - 2 || y > WORLD_H - 2) return 'wall';
-  for (const b of world.blocks) if (x > b.x0 && x < b.x1 && y > b.y0 && y < b.y1) {
-    if (!b.town) return 'grass';
-    if (x < b.x0 + PAVE || x > b.x1 - PAVE || y < b.y0 + PAVE || y > b.y1 - PAVE) return 'pavement';
-    return 'grass';
+  const q = roadAt(x, y);
+  if (q) {
+    const e = q.e;
+    if (q.dist <= e.W / 2) return e.median && Math.abs(q.lat - e.div) < e.median / 2 ? 'median' : 'road';
+    for (const bay of e.bays) if (Math.abs(q.s - bay.s) < 12 && Math.sign(q.lat) === bay.side && q.dist <= e.W / 2 + 2.6) return 'road';
+    if (e.pave && q.dist <= e.W / 2 + PAVE) return 'pavement';
   }
-  return 'road';   // seams between road rectangles
+  const n2 = nodeAt(x, y, PAVE);
+  if (n2 && n2.pave && n2.arms.some(a => a.e.pave)) return 'pavement';
+  return 'grass';
 }
-function buildingAt(x, y, pad = 0) {
-  for (const h of world.buildings) if (x > h.x - pad && x < h.x + h.w + pad && y > h.y - pad && y < h.y + h.h + pad) return h;
-  return null;
+const districtAt = (x, y) => (x > 1090 && y < 660) ? 'city' : (x < 1010 && y < 870) ? 'suburb' : (Math.hypot(x - 900, y - 1390) < 240) ? 'village' : 'rural';
+
+// ---- Railway and level crossings
+function updateRail(dt, time) {
+  const r = world.rail; if (!r) return;
+  for (const tr of world.trains) {
+    if (tr.wait > 0) { tr.wait -= dt; if (tr.wait <= 0) { tr.dir = -tr.dir; tr.s = tr.dir > 0 ? -150 : r.len + 150; } continue; }
+    tr.s += tr.dir * tr.v * dt;
+    if (tr.s < -200 || tr.s > r.len + 200) tr.wait = 40 + Math.random() * 30;
+  }
+  for (const lx of world.levelX) {
+    const danger = world.trains.some(tr => {
+      if (tr.wait > 0) return false;
+      const head = tr.s, tail = tr.s - tr.dir * tr.len;
+      if ((lx.sr - head) * (lx.sr - tail) <= 0 || Math.abs(lx.sr - tail) < 20) return true;   // train on the crossing
+      const ahead = (lx.sr - head) * tr.dir;
+      return ahead > 0 && ahead / tr.v < 15;
+    });
+    if (danger && lx.state === 'open') { lx.state = 'amber'; lx.t0 = time; }
+    if (lx.state === 'amber' && time - lx.t0 > 3) { lx.state = 'red'; lx.t0 = time; }
+    if (!danger && lx.state === 'red' && time - lx.t0 > 6) { lx.state = 'open'; }
+    const down = lx.state === 'red' && time - lx.t0 > 3.5;
+    lx.barrier = clamp(lx.barrier + (down ? dt : -dt) * 0.5, 0, 1);
+  }
+}
+function railPoint(s) {
+  const r = world.rail; s = clamp(s, 0, r.len);
+  let k = 0; while (k < r.cum.length - 2 && r.cum[k + 1] < s) k++;
+  const a = r.pts[k], b = r.pts[k + 1], L = (r.cum[k + 1] - r.cum[k]) || 1, t = (s - r.cum[k]) / L;
+  return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, ang: Math.atan2(b[1] - a[1], b[0] - a[0]) };
 }
 
-// AI traffic (keeps left, goes clockwise round roundabouts, stops at red and for zebra crossings)
-// and pedestrians (pavement walkers and zebra-crossing users).
+// The map: Ashford Green (suburbs), Kingsgate (city centre), the A40 dual-carriageway bypass,
+// countryside with a railway, and the village of Little Mardon.
+// Features were chosen from what UK drivers and examiners find hardest: multi-lane and signalised roundabouts,
+// mini and double-mini roundabouts, one-way streets and a gyratory loop, bus lanes, box junctions,
+// advanced stop lines, staggered and unmarked crossroads, STOP junctions, right turns across a dual
+// carriageway, level crossings, single-track lanes, parked cars and pinch points.
+function buildMap() {
+  const R = rng(1185);
+  const SUB = { x0: 200, y0: 200, step: 140, nx: 6, ny: 5 };
+  const S = {}, C = {};
+  const sKey = (i, j) => i + ',' + j;
+  const subRows = ['Church Lane', 'Victoria Road', 'Albert Street', 'Park Avenue', 'Mill Road'];
+  const subCols = ['Station Road', 'Elm Grove', 'Queens Road', 'Oak Street', 'Manor Way', 'Green Lane'];
+  const subType = { '2,1': 'give', '1,1': 'unmarked', '3,1': 'mini', '4,2': 'rb', '1,3': 'stop', '3,3': 'lights', '2,3': 'give' };
+
+  // ---- Ashford Green: a slightly irregular grid of residential streets.
+  for (let j = 0; j < SUB.ny; j++) for (let i = 0; i < SUB.nx; i++) {
+    const edge = i === 0 || j === 0 || i === SUB.nx - 1 || j === SUB.ny - 1;
+    const jx = edge ? 0 : (R() - 0.5) * 22, jy = edge ? 0 : (R() - 0.5) * 22;
+    const type = subType[sKey(i, j)] || 'give';
+    const n = addNode(SUB.x0 + i * SUB.step + jx, SUB.y0 + j * SUB.step + jy, type, { district: 'suburb' });
+    if (type === 'rb') { n.ringR = 13; n.ringLanes = 1; }
+    S[sKey(i, j)] = n;
+  }
+  // Double mini-roundabout replaces the crossing of the two main roads.
+  const dm = S['2,2'];
+  const miniL = addNode(dm.x - 17, dm.y, 'mini', { district: 'suburb' });
+  const miniR = addNode(dm.x + 17, dm.y + 2, 'mini', { district: 'suburb' });
+  dm.dead = true;
+  // Staggered crossroads: Elm Grove continues south 34 m east of where it arrives from the north.
+  const stag = addNode(S['1,2'].x + 34, S['1,2'].y + 1, 'give', { district: 'suburb' });
+
+  const subRoad = (a, b, o) => addRoad(a, b, { kind: 'town', district: 'suburb', ...o });
+  const skipH = new Set([]), skipV = new Set(['3,0', '4,3']);
+  for (let j = 0; j < SUB.ny; j++) for (let i = 0; i < SUB.nx - 1; i++) {
+    let a = S[sKey(i, j)], b = S[sKey(i + 1, j)];
+    if (skipH.has(sKey(i, j))) continue;
+    const o = { name: subRows[j], rank: j === 2 ? 2 : 1, limit: (j === 1 && (i === 2)) ? 20 : 30 };
+    if (j === 2 && i === 1) { subRoad(a, stag, o); subRoad(stag, miniL, o); continue; }
+    if (j === 2 && i === 2) { subRoad(miniR, b, o); continue; }
+    subRoad(a, b, o);
+  }
+  subRoad(miniL, miniR, { name: subRows[2], rank: 2 });
+  for (let i = 0; i < SUB.nx; i++) for (let j = 0; j < SUB.ny - 1; j++) {
+    if (skipV.has(sKey(i, j))) continue;
+    let a = S[sKey(i, j)], b = S[sKey(i, j + 1)];
+    const o = { name: subCols[i], rank: i === 2 ? 2 : 1, limit: (i === 3 && j === 1) ? 20 : 30 };
+    if (i === 1 && j === 2) a = stag;
+    if (i === 2 && j === 1) b = miniL;
+    if (i === 2 && j === 2) a = miniR;
+    subRoad(a, b, o);
+  }
+
+  // ---- Kingsgate city centre: one-way streets, a clockwise one-way loop, a bus-lane avenue.
+  const cityRows = ['Castle Street', 'King Street', 'Kingsway', 'Queen Street', 'Bridge Street'];
+  const cityCols = ['West Street', 'Market Street', 'Broad Street', 'Cross Street', 'High Street', 'East Street'];
+  for (let j = 0; j < 5; j++) for (let i = 0; i < 6; i++) {
+    const n = addNode(1150 + i * 100, 200 + j * 100, 'give', { district: 'city' });
+    C[sKey(i, j)] = n;
+  }
+  const cRoad = (a, b, o) => addRoad(a, b, { kind: 'city', district: 'city', ...o });
+  const rowCfg = [
+    { rank: 1, limit: 30 },
+    { rank: 2, limit: 20, oneway: true, lanesF: 2 },                  // King Street: one-way east
+    { rank: 3, limit: 30, lanesF: 2, lanesB: 2, busF: true, busB: true }, // Kingsway: bus lanes both ways
+    { rank: 2, limit: 20, oneway: true, lanesF: 2, rev: true },       // Queen Street: one-way west
+    { rank: 1, limit: 30 },
+  ];
+  const colCfg = [
+    { rank: 1, limit: 30 }, { rank: 1, limit: 20, oneway: true, rev: true },    // Market Street: one-way north
+    { rank: 1, limit: 20 }, { rank: 2, limit: 20, oneway: true, lanesF: 2 }, // Cross Street: one-way south
+    { rank: 1, limit: 20 }, { rank: 1, limit: 30 },
+  ];
+  for (let j = 0; j < 5; j++) for (let i = 0; i < 5; i++) {
+    const c = rowCfg[j], a = C[sKey(i, j)], b = C[sKey(i + 1, j)];
+    cRoad(c.rev ? b : a, c.rev ? a : b, { ...c, name: cityRows[j] });
+  }
+  for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) {
+    const c = colCfg[i], a = C[sKey(i, j)], b = C[sKey(i, j + 1)];
+    cRoad(c.rev ? b : a, c.rev ? a : b, { ...c, name: cityCols[i] });
+  }
+  for (const k in C) {
+    const n = C[k], [i, j] = k.split(',').map(Number);
+    const inner = i > 0 && i < 5 && j > 0 && j < 4;
+    if (inner || (j === 2 && (i === 0 || i === 5))) n.type = 'lights';
+    if (j === 2 && inner) { n.box = true; n.asl = true; }
+    if (j === 0 && i === 3) n.type = 'stop';
+  }
+
+  // ---- Links between districts.
+  const link = (a, b, o) => addRoad(a, b, { kind: 'link', limit: 30, rank: 2, ...o });
+  link(S['5,0'], C['0,0'], { name: 'Station Road' });
+  link(S['5,2'], C['0,3'], { name: 'London Road', via: [[1020, 488]] });
+  link(S['5,4'], C['0,4'], { name: 'Mill Road', via: [[1010, 720], [1090, 640]] });
+
+  // ---- A40 bypass: a 70 mph dual carriageway between large roundabouts.
+  const rb1 = addNode(220, 1000, 'rb', { ringR: 16, ringLanes: 1, district: 'rural' });
+  const rb2 = addNode(620, 1000, 'rb', { ringR: 24, ringLanes: 2, district: 'rural', spiral: true });
+  const rb3 = addNode(1150, 1000, 'rb', { ringR: 27, ringLanes: 2, district: 'rural', signals: true });
+  const gap = addNode(1400, 1000, 'give', { district: 'rural', gap: true });
+  const rb4 = addNode(1650, 1000, 'rb', { ringR: 21, ringLanes: 2, district: 'rural' });
+  const dual = { kind: 'dual', lanesF: 2, lanesB: 2, median: 3.2, limit: 70, rank: 4, pave: false, name: 'A40 Bypass' };
+  addRoad(rb1, rb2, dual); addRoad(rb2, rb3, dual); addRoad(rb3, gap, dual); addRoad(gap, rb4, dual);
+  const a40 = { kind: 'link', limit: 40, rank: 2, pave: false };
+  link(S['0,4'], rb1, { ...a40, name: 'Station Road' });
+  link(S['3,4'], rb2, { ...a40, name: 'Oak Street', via: [[628, 880]] });
+  link(C['2,4'], rb3, { ...a40, name: 'Broad Street', via: [[1350, 740], [1220, 880]] });
+  link(C['5,4'], rb4, { ...a40, name: 'East Street' });
+
+  // ---- Countryside and Little Mardon.
+  const rural = { kind: 'rural', limit: 60, rank: 2, pave: false, hedge: true };
+  const village = { kind: 'village', limit: 30, rank: 2, district: 'village' };
+  const v1 = addNode(780, 1340, 'give', { district: 'village' });
+  const v2 = addNode(900, 1340, 'mini', { district: 'village' });
+  const v3 = addNode(1020, 1340, 'give', { district: 'village' });
+  const v4 = addNode(900, 1462, 'give', { district: 'village' });
+  const gwA = addNode(690, 1318, 'gateway', { pave: false }), gwB = addNode(866, 1236, 'gateway', { pave: false });
+  const gwC = addNode(1058, 1246, 'gateway', { pave: false }), gwD = addNode(1112, 1352, 'gateway', { pave: false });
+  addRoad(rb1, gwA, { ...rural, name: 'Mardon Lane', via: [[232, 1120], [318, 1252], [470, 1236], [585, 1322]] });
+  addRoad(gwA, v1, { ...village, name: 'Mardon Lane' });
+  addRoad(rb2, gwB, { ...rural, name: 'Ferry Road', via: [[640, 1110], [760, 1160]] });
+  addRoad(gwB, v2, { ...village, name: 'Ferry Road' });
+  addRoad(rb3, gwC, { ...rural, name: 'Kings Hill', via: [[1150, 1110], [1100, 1190]] });
+  addRoad(gwC, v3, { ...village, name: 'Kings Hill' });
+  addRoad(v1, v2, { ...village, name: 'High Street', rank: 3 });
+  addRoad(v2, v3, { ...village, name: 'High Street', rank: 3 });
+  addRoad(v1, v4, { ...village, name: 'Back Lane', rank: 1, via: [[792, 1440]] });
+  addRoad(v2, v4, { ...village, name: 'Church Walk', rank: 1 });
+  addRoad(v4, v3, { ...village, name: 'Back Lane', rank: 1, via: [[1012, 1450]] });
+  addRoad(v3, gwD, { ...village, name: 'Wold Lane', rank: 1 });
+  addRoad(gwD, gap, { kind: 'single', laneW: 2.3, limit: 60, rank: 1, pave: false, hedge: true, name: 'Wold Lane (single track)',
+    via: [[1250, 1392], [1382, 1300], [1412, 1120]] });
+  for (const n of [v1, v2, v3, v4]) n.district = 'village';
+
+  world.nodes = world.nodes.filter(n => !n.dead);
+  world.nodes.forEach((n, i) => n.id = i);
+  for (const e of world.edges) e.district = e.district || (e.kind === 'village' ? 'village' : e.kind === 'city' ? 'city' : e.kind === 'town' ? 'suburb' : 'rural');
+  finalizeNodes();
+
+  // ---- Railway with level crossings found where it meets roads.
+  const railPts = sampleCurve([[0, 1218], [600, 1196], [1300, 1176], [2100, 1150]], 6);
+  const rail = { pts: railPts, cum: [0] };
+  for (let k = 1; k < railPts.length; k++) rail.cum.push(rail.cum[k - 1] + Math.hypot(railPts[k][0] - railPts[k - 1][0], railPts[k][1] - railPts[k - 1][1]));
+  rail.len = rail.cum[rail.cum.length - 1];
+  world.rail = rail;
+  for (const e of world.edges) for (let k = 0; k < e.pts.length - 1; k++) for (let m = 0; m < railPts.length - 1; m++) {
+    const hit = segX(e.pts[k], e.pts[k + 1], railPts[m], railPts[m + 1]);
+    if (!hit) continue;
+    const s = e.cum[k] + hit.t * (e.cum[k + 1] - e.cum[k]), sr = rail.cum[m] + hit.u * (rail.cum[m + 1] - rail.cum[m]);
+    const p = pointAt(e, s);
+    world.levelX.push({ e, s, sr, x: p.x, y: p.y, ang: p.ang, state: 'open', t0: 0, barrier: 0, id: world.levelX.length });
+  }
+  world.trains.push({ s: -150, dir: 1, v: 33, len: 92, wait: 8 });
+
+  // ---- Street furniture on roads: crossings, humps, passing places, parked cars, a pinch point.
+  const findEdge = (a, b) => world.edges.find(e => (e.a === a && e.b === b) || (e.a === b && e.b === a));
+  const addCrossing = (e, kind, t = 0.5) => { if (!e) return; const s = e.len * t, p = pointAt(e, s);
+    world.crossings.push({ e, s, kind, x: p.x, y: p.y, ang: p.ang, phase: R() * 26, id: world.crossings.length }); };
+  addCrossing(findEdge(S['0,2'], S['1,2']), 'zebra', 0.55);
+  addCrossing(findEdge(S['2,0'], S['2,1']), 'zebra');
+  addCrossing(findEdge(S['2,4'], S['3,4']), 'zebra', 0.4);
+  addCrossing(findEdge(S['4,1'], S['4,2']), 'zebra');
+  addCrossing(findEdge(S['2,1'], S['3,1']), 'zebra', 0.35);
+  addCrossing(findEdge(C['1,2'], C['2,2']), 'puffin');
+  addCrossing(findEdge(C['3,2'], C['4,2']), 'puffin');
+  addCrossing(findEdge(C['2,1'], C['3,1']), 'puffin');
+  addCrossing(findEdge(C['3,2'], C['3,3']), 'puffin');
+  addCrossing(findEdge(C['2,0'], C['2,1']), 'zebra');
+  addCrossing(findEdge(C['3,4'], C['4,4']), 'zebra');
+  addCrossing(findEdge(v2, v3), 'zebra', 0.45);
+  for (const e of [findEdge(S['2,1'], S['3,1']), findEdge(S['3,1'], S['3,2'])]) if (e) e.humps = [0.22, 0.62, 0.85].map(t => e.len * t);
+  const single = world.edges.find(e => e.kind === 'single');
+  for (let s = 60, side = 1; s < single.len - 40; s += 110, side = -side) single.bays.push({ s, side });
+  for (const e of world.edges) {
+    if (!['town', 'city', 'village'].includes(e.kind) || e.rank > 2 || e.limit === 20 || e.lanesB === 0 || e.len < 70) continue;
+    if (R() < 0.45) continue;
+    const side = R() < 0.5 ? 1 : -1, dir = side > 0 ? 1 : -1;     // parked in the kerb lane on that side
+    for (let s = e.a.r + 22; s < e.len - e.b.r - 22; s += 6 + R() * 10) {
+      if (world.crossings.some(c => c.e === e && Math.abs(c.s - s) < 20)) continue;
+      if (R() < 0.35) { s += 14; continue; }
+      world.parked.push({ e, s, dir, lat: laneLat(e, dir, 0) + side * 0.75, color: CAR_COLORS[(R() * CAR_COLORS.length) | 0], len: 4.3, wid: 1.8, parked: true });
+    }
+  }
+  const pinch = findEdge(S['0,3'], S['1,3']);
+  if (pinch) { world.parked = world.parked.filter(p => p.e !== pinch); world.obstacles.push({ e: pinch, s: pinch.len / 2, side: 1, len: 7 }); }
+  // Parked cars and build-outs both block a lane; record them as obstructions for give-way logic.
+  for (const p of world.parked) { const q = pointAt(p.e, p.s, p.lat); p.x = q.x; p.y = q.y; p.heading = p.dir > 0 ? q.ang : q.ang + Math.PI; }
+}
+
+function segX(p1, p2, p3, p4) {
+  const d = (p2[0] - p1[0]) * (p4[1] - p3[1]) - (p2[1] - p1[1]) * (p4[0] - p3[0]);
+  if (Math.abs(d) < 1e-9) return null;
+  const t = ((p3[0] - p1[0]) * (p4[1] - p3[1]) - (p3[1] - p1[1]) * (p4[0] - p3[0])) / d;
+  const u = ((p3[0] - p1[0]) * (p2[1] - p1[1]) - (p3[1] - p1[1]) * (p2[0] - p1[0])) / d;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? { t, u } : null;
+}
+
+// Buildings, trees, fields and road signs, placed along the roads in the style of each district.
+const STYLE = {
+  city: { w: [16, 28], d: [18, 30], setback: 0.4, gap: [0, 1.5], roofs: ['#5d6670', '#6f7780', '#4b545e', '#7d8590', '#3e4a59', '#56738f', '#8a7f72'], kind: 'flat' },
+  suburb: { w: [5.8, 8], d: [8.5, 10], setback: 4.5, gap: [0, 0.4], roofs: ['#7d3b2f', '#8c4a36', '#6e3428', '#5d5f63', '#9a5a40', '#6b4a3a'], kind: 'pitched', breakP: 0.1 },
+  village: { w: [8, 12], d: [7.5, 9.5], setback: 2.5, gap: [3, 7], roofs: ['#b89b5e', '#5d5f63', '#a58f6e', '#7d3b2f', '#c2a56b'], kind: 'pitched' },
+};
+const PARK = { x0: 760, y0: 630, x1: 900, y1: 760 };
+const railYAt = (x) => { const p = world.rail.pts; for (let k = 0; k < p.length - 1; k++) if (x <= p[k + 1][0]) { const t = (x - p[k][0]) / (p[k + 1][0] - p[k][0]); return p[k][1] + (p[k + 1][1] - p[k][1]) * t; } return p[p.length - 1][1]; };
+
+function buildingFits(h, district) {
+  const c = Math.cos(h.ang), s = Math.sin(h.ang);
+  for (const u of [-0.5, 0, 0.5]) for (const v of [-0.5, 0, 0.5]) {
+    const lx = u * (h.w + 1.5), ly = v * (h.h + 1.5);
+    const x = h.x + lx * c - ly * s, y = h.y + lx * s + ly * c;
+    if (surfaceAt(x, y) !== 'grass' || nodeAt(x, y, PAVE + 2) || buildingAt(x, y, 0.5)) return false;
+    if (districtAt(x, y) !== district) return false;
+    if (x > PARK.x0 && x < PARK.x1 && y > PARK.y0 && y < PARK.y1) return false;
+    if (Math.abs(y - railYAt(x)) < 14) return false;
+  }
+  return true;
+}
+function placeBuilding(h) {
+  world.buildings.push(h);
+  const m = Math.hypot(h.w, h.h) / 2;
+  gadd(h.x - m, h.y - m, h.x + m, h.y + m, { t: 'b', h });
+}
+
+function buildScenery() {
+  const R = rng(4242);
+  const pick = (arr) => arr[(R() * arr.length) | 0];
+  const range = (r) => r[0] + R() * (r[1] - r[0]);
+  // Landmarks first so the terraces fit round them.
+  const landmark = (x, y, ang, w, h, roof, label, kind = 'pitched') => placeBuilding({ x, y, ang, w, h, roof, label, kind, district: districtAt(x, y) });
+  landmark(560, 300, 0, 46, 22, '#8a8f99', 'SCHOOL', 'flat');
+  landmark(958, 1402, 0, 28, 12, '#6d6a63', '✝ CHURCH');
+  landmark(840, 1306, 0, 16, 10, '#5b4a3a', 'RED LION');
+  landmark(1300, 455, 0, 34, 30, '#3e4a59', 'STATION', 'flat');
+
+  // Fields fill the countryside; hedges run between them.
+  const greens = ['#7fa457', '#8bb060', '#9bb86a', '#c9b56a', '#86a95a', '#a7b866'];
+  for (let x = 0; x < world.W; x += 95) for (let y = 860; y < world.H; y += 85) {
+    const cx = x + 47, cy = y + 42;
+    if (districtAt(cx, cy) !== 'rural') continue;
+    world.fields.push({ x0: x + 2, y0: y + 2, x1: x + 93, y1: y + 83, color: pick(greens), rows: R() < 0.4, ang: R() < 0.5 });
+  }
+
+  // Frontages along every town street.
+  for (const e of world.edges) {
+    for (const side of [1, -1]) {
+      let s = 6;
+      while (s < e.len - 6) {
+        const mid = pointAt(e, s, side * (e.W / 2 + PAVE + 6));
+        const d = districtAt(mid.x, mid.y), st = STYLE[d];
+        if (!st || !e.pave) { s += 8; continue; }
+        const w = range(st.w), depth = range(st.d);
+        const p = pointAt(e, s + w / 2, side * (e.W / 2 + PAVE + st.setback + depth / 2));
+        const h = { x: p.x, y: p.y, ang: p.ang, w, h: depth, roof: pick(st.roofs), kind: st.kind, district: d, side };
+        if (st.kind === 'flat') h.height = 6 + R() * 10;
+        if (buildingFits(h, d)) { placeBuilding(h); s += w + range(st.gap) + (st.breakP && R() < st.breakP ? 5 : 0); }
+        else s += 3;
+      }
+    }
+    // Farms along country roads.
+    if (e.kind === 'rural') for (let s = 120; s < e.len - 80; s += 260) {
+      if (R() < 0.45) continue;
+      const side = R() < 0.5 ? 1 : -1;
+      const p = pointAt(e, s, side * (e.W / 2 + 26));
+      const house = { x: p.x, y: p.y, ang: p.ang, w: 12, h: 9, roof: '#6b4a3a', kind: 'pitched', district: 'rural' };
+      const q = pointAt(e, s + 22, side * (e.W / 2 + 32));
+      const barn = { x: q.x, y: q.y, ang: p.ang, w: 22, h: 14, roof: pick(['#8a3b2c', '#6b6f72', '#4f6b55']), kind: 'flat', height: 4, district: 'rural' };
+      for (const b of [house, barn]) if (buildingFits(b, 'rural')) placeBuilding(b);
+    }
+  }
+
+  // Trees: gardens, a park, hedgerows, street trees on Kingsway, and a wood.
+  const tryTree = (x, y, r) => { if (surfaceAt(x, y) === 'grass' && !buildingAt(x, y, r * 0.6) && !nodeAt(x, y, PAVE + 3) && Math.abs(y - railYAt(x)) > 8) world.trees.push({ x, y, r }); };
+  for (let k = 0; k < 900; k++) { const x = 160 + R() * 780, y = 160 + R() * 640; tryTree(x, y, 2 + R() * 2.4); }
+  for (let k = 0; k < 60; k++) tryTree(PARK.x0 + 6 + R() * (PARK.x1 - PARK.x0 - 12), PARK.y0 + 6 + R() * (PARK.y1 - PARK.y0 - 12), 3 + R() * 2.5);
+  for (let k = 0; k < 140; k++) { const a = R() * TAU, d = Math.sqrt(R()) * 230; tryTree(900 + Math.cos(a) * d, 1390 + Math.sin(a) * d, 2.5 + R() * 2.5); }
+  for (let k = 0; k < 420; k++) tryTree(1560 + R() * 520, 1230 + R() * 350, 3 + R() * 3);
+  for (let k = 0; k < 180; k++) tryTree(R() * 160, 840 + R() * 740, 3 + R() * 3);
+  for (const e of world.edges) {
+    if (e.hedge) for (let s = 20; s < e.len - 20; s += 28) if (R() < 0.4) { const p = pointAt(e, s, (R() < 0.5 ? 1 : -1) * (e.W / 2 + 4)); tryTree(p.x, p.y, 2.5 + R() * 2.5); }
+    if (e.busF) for (let s = 20; s < e.len - 20; s += 24) for (const side of [1, -1]) { const p = pointAt(e, s, side * (e.W / 2 + PAVE - 0.8)); world.trees.push({ x: p.x, y: p.y, r: 1.8, street: true }); }
+  }
+  buildSigns();
+}
+
+function buildSigns() {
+  const add = (kind, x, y, o = {}) => world.signs.push({ kind, x, y, ...o });
+  const kerbSign = (e, s, dir, kind, o = {}, off = 1.5) => { const p = pointAt(e, s, dir * (e.W / 2 + off)); add(kind, p.x, p.y, o); };
+  for (const e of world.edges) for (const dir of [1, -1]) {
+    if (!lanesOf(e, dir)) continue;
+    const from = dir > 0 ? e.a : e.b, s0 = dir > 0 ? from.r + 10 : e.len - from.r - 10;
+    const otherLimits = from.arms.filter(a => a.e !== e).map(a => a.e.limit);
+    const nsl = e.limit >= 60;
+    if (e.len > 70 && (from.type === 'gateway' || otherLimits.some(l => l !== e.limit) || e.limit === 20))
+      kerbSign(e, s0, dir, 'limit', { limit: e.limit, nsl });
+    if (from.type === 'gateway' && e.limit === 30) kerbSign(e, s0 + dir * 4, dir, 'village', { text: 'LITTLE MARDON' }, 2.8);
+    if (e.lanesB === 0) kerbSign(e, s0 + dir * 6, dir, 'oneway', {}, 1.5);
+    if ((dir > 0 ? e.busF : e.busB)) kerbSign(e, s0 + dir * 14, dir, 'bus', {}, 1.5);
+    if (e.kind === 'single') kerbSign(e, s0 + dir * 14, dir, 'single', {}, 1.5);
+    if (e.humps.length) kerbSign(e, s0 + dir * 18, dir, 'hump', {}, 1.5);
+    if (e.limit === 20 && e.district === 'suburb') kerbSign(e, s0 + dir * 24, dir, 'school', {}, 1.5);
+    // Warnings before the junction this road leads to.
+    const to = dir > 0 ? e.b : e.a, sEnd = dir > 0 ? e.len - to.r : to.r;
+    if (to.type === 'rb' && e.len > 150) kerbSign(e, sEnd - dir * 70, dir, 'rbwarn', {}, 1.5);
+  }
+  // One-way streets: No Entry at the far end, facing anyone who would enter the wrong way.
+  for (const e of world.edges) if (e.lanesB === 0) for (const side of [1, -1]) {
+    const p = pointAt(e, e.len - e.b.r - 2, side * (e.W / 2 + 1.3)); add('noentry', p.x, p.y);
+  }
+  for (const n of world.nodes) for (const arm of n.arms) {
+    if (!canEnter(arm)) continue;
+    const d = dirIn(arm), s = sFrom(arm, n.r + 3);
+    const minor = (n.type === 'give' && !arm.major) || n.type === 'stop' || n.type === 'rb' || n.type === 'mini';
+    if (minor) kerbSign(arm.e, s, d, n.type === 'stop' && !arm.major ? 'stop' : n.type === 'mini' ? 'mini' : 'giveway', {}, 1.6);
+  }
+  for (const lx of world.levelX) for (const dir of [1, -1]) kerbSign(lx.e, lx.s - dir * 60, dir, 'lxwarn', {}, 1.5);
+  for (const e of world.edges) for (const bay of e.bays) { const p = pointAt(e, bay.s, bay.side * (e.W / 2 + 3.4)); add('passing', p.x, p.y); }
+  for (const o of world.obstacles) {
+    kerbSign(o.e, o.s - 22, 1, 'yieldOncoming', {}, 1.5);
+    kerbSign(o.e, o.s + 22, -1, 'priority', {}, 1.5);
+  }
+  // Chevrons on the outside of sharp country bends.
+  for (const e of world.edges) {
+    if (e.kind !== 'rural' && e.kind !== 'single') continue;
+    for (let s = 40; s < e.len - 40; s += 15) {
+      const t = angDiff(pointAt(e, s + 15).ang, pointAt(e, s - 15).ang);
+      if (Math.abs(t) > 0.42) { kerbSign(e, s, t > 0 ? 1 : -1, 'chevron', { ang: pointAt(e, s).ang, right: t > 0 }, 2.5); s += 25; }
+    }
+  }
+}
+
+// AI traffic, part 1: route planning. Each car follows a polyline of lane points with "gates"
+// (stop lines, crossings, obstructions) where it may have to wait.
 const CAR_COLORS = ['#c8102e', '#1d4e89', '#f2f2ee', '#2b2b2b', '#6b7b8c', '#2f6b3a', '#d9a400', '#8a8f98', '#5a2d82', '#b5651d', '#0f7b8a', '#e8e1cf'];
 const traffic = { cars: [], peds: [] };
 
-const armAngle = (arm) => arm * Math.PI / 2;
-function laneIn(n, arm, t) {           // point on arm `arm`, distance t from centre, for traffic heading INTO the node
-  const d = DIRS[arm], l = leftOf([-d[0], -d[1]]);
-  return [n.x + d[0] * t + l[0] * LANE, n.y + d[1] * t + l[1] * LANE];
-}
-function laneOut(n, arm, t) {          // same, for traffic heading OUT along that arm
-  const d = DIRS[arm], l = leftOf(d);
-  return [n.x + d[0] * t + l[0] * LANE, n.y + d[1] * t + l[1] * LANE];
-}
-const stopDist = (n) => n.type === 'rb' ? RB_OUT + 1.5 : n.r + 1.4;
-const RB_DELTA = Math.asin(LANE / RB_LANE);
-const rbEntryAngle = (arm) => armAngle(arm) + RB_DELTA;
+// Turn from arriving on `arm` to leaving on `ex`: >0 right, <0 left (radians).
+const turnOf = (arm, ex) => angDiff(ex.ang, arm.ang + Math.PI);
+const rbSweep = (arm, ex) => { let sw = ((ex.ang - arm.ang) % TAU + TAU) % TAU; if (sw < 0.3) sw += TAU; return sw; };
+const stopS = (n, arm) => sFrom(arm, n.r + 0.8);
+const oppositeArm = (n, arm) => n.arms.reduce((b, a) => a !== arm && (!b || Math.abs(angDiff(a.ang, arm.ang + Math.PI)) < Math.abs(angDiff(b.ang, arm.ang + Math.PI))) ? a : b, null);
 
-function junctionPath(n, arm, ex) {
-  const pts = [];
-  if (n.type === 'rb') {
-    const a0 = rbEntryAngle(arm);
-    let a1 = armAngle(ex) - RB_DELTA;
-    while (a1 < a0 + 0.35) a1 += Math.PI * 2;
-    const steps = Math.max(3, Math.ceil((a1 - a0) / 0.2));
-    for (let k = 0; k <= steps; k++) {
-      const a = a0 + (a1 - a0) * k / steps;
-      pts.push([n.x + Math.cos(a) * RB_LANE, n.y + Math.sin(a) * RB_LANE]);
-    }
-    return pts;
+// Lane obstructions (parked cars, build-outs) per road and direction, merged into intervals.
+function buildObstructions() {
+  for (const e of world.edges) e.obst = { 1: [], '-1': [] };
+  const byKey = new Map();
+  for (const p of world.parked) { const k = p.e.id + ':' + p.dir; if (!byKey.has(k)) byKey.set(k, []); byKey.get(k).push(p.s); }
+  for (const [k, list] of byKey) {
+    const [id, dir] = k.split(':'), e = world.edges[+id];
+    list.sort((a, b) => a - b);
+    let lo = list[0], hi = list[0];
+    for (const s of list.slice(1)) { if (s - hi < 14) hi = s; else { e.obst[dir].push([lo - 3, hi + 3]); lo = hi = s; } }
+    e.obst[dir].push([lo - 3, hi + 3]);
   }
-  if (ex === (arm + 2) % 4) return pts;    // straight on: the lane lines meet directly
-  const dIn = [-DIRS[arm][0], -DIRS[arm][1]], dOut = DIRS[ex];
-  const lI = leftOf(dIn), lO = leftOf(dOut);
-  const p0 = laneIn(n, arm, n.r), p2 = laneOut(n, ex, n.r);
-  const c = [n.x + (lI[0] + lO[0]) * LANE, n.y + (lI[1] + lO[1]) * LANE];
-  for (let k = 1; k < 8; k++) {
-    const t = k / 8, u = 1 - t;
-    pts.push([u * u * p0[0] + 2 * u * t * c[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * c[1] + t * t * p2[1]]);
+  for (const o of world.obstacles) o.e.obst[o.side > 0 ? 1 : -1].push([o.s - o.len / 2, o.s + o.len / 2]);
+}
+function bulgeAt(e, dir, lane, s) {
+  if (lane !== 0) return 0;
+  let w = 0;
+  for (const [lo, hi] of e.obst[dir] || []) {
+    const d = s < lo ? lo - s : s > hi ? s - hi : 0;
+    w = Math.max(w, clamp(1 - d / 10, 0, 1));
   }
-  return pts;
+  if (!w) return 0;
+  const toward = Math.sign(e.div - laneLat(e, dir, 0)) || -dir;
+  return toward * w * e.laneW * (lanesOf(e, dir) > 1 ? 1 : 0.92);
 }
 
-function pushPt(car, p) {
+function pushPt(car, x, y) {
   const last = car.pts[car.pts.length - 1];
-  const d = last ? Math.hypot(p[0] - last[0], p[1] - last[1]) : 0;
+  const d = last ? Math.hypot(x - last[0], y - last[1]) : 0;
   if (last && d < 0.05) return;
-  car.pts.push(p);
+  car.pts.push([x, y]);
   car.cum.push((car.cum.length ? car.cum[car.cum.length - 1] : 0) + d);
 }
 const pathEnd = (car) => car.cum[car.cum.length - 1];
 
-// Drive along `edge` towards node `to`; queue the street, its zebra, and the stop/give-way line.
-function queueStreet(car, edge, to) {
-  const arm = to === edge.b ? (edge.dir + 2) % 4 : edge.dir;   // arm of `to` we arrive on
-  if (edge.zebra) {
-    const z = edge.zebra, from = to === edge.b ? edge.a : edge.b;
-    const d = DIRS[(arm + 2) % 4];   // travel direction
-    const l = leftOf(d);
-    const zs = Math.hypot(z.x - from.x, z.y - from.y) - 3;
-    const last = car.pts[car.pts.length - 1];
-    const lastAlong = (last[0] - from.x) * d[0] + (last[1] - from.y) * d[1];
-    if (zs > lastAlong + 1) {
-      pushPt(car, [from.x + d[0] * zs + l[0] * LANE, from.y + d[1] * zs + l[1] * LANE]);
-      car.gates.push({ type: 'zebra', s: pathEnd(car), z });
+function chooseExit(car, n, arm) {
+  let opts = n.arms.filter(a => a !== arm && canExit(a));
+  if (!opts.length) opts = [arm];
+  const ws = opts.map(a => {
+    let w = 1 + a.e.rank * 0.6;
+    if (Math.abs(turnOf(arm, a)) < 0.5) w += 1.6;
+    if (a.e.kind === 'single') w *= car.kind === 'tractor' ? 3 : 0.25;
+    if (car.kind === 'tractor' && (a.e.kind === 'city' || a.e.kind === 'town')) w *= 0.1;
+    if (car.kind === 'bus' && (a.e.busF || a.e.busB)) w *= 3;
+    if ((car.kind === 'taxi' || car.kind === 'bus') && a.e.district !== 'city') w *= 0.3;
+    return w;
+  });
+  let r = Math.random() * ws.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < opts.length; i++) if ((r -= ws[i]) <= 0) return opts[i];
+  return opts[0];
+}
+
+function laneFor(car, e, dir, n, arm, ex) {
+  const L = lanesOf(e, dir);
+  if (L <= 1) return 0;
+  const bus = isBusLane(e, dir, 0);
+  if (bus && car.kind === 'bus') return 0;
+  const right = n.type === 'rb' || n.type === 'mini' ? rbSweep(arm, ex) > 3.7 : turnOf(arm, ex) > 0.5;
+  if (right) return L - 1;
+  return bus ? 1 : (Math.random() < 0.25 ? Math.min(1, L - 1) : 0);
+}
+
+function gateType(n, arm, ex) {
+  if (n.type === 'lights') return 'lights';
+  if (n.type === 'rb' || n.type === 'mini') return 'rb';
+  if (n.type === 'unmarked') return 'unmarked';
+  if ((n.type === 'give' || n.type === 'stop') && !arm.major) return n.type;
+  if ((n.type === 'give' || n.type === 'stop') && turnOf(arm, ex) > 0.5) return 'right';
+  return null;
+}
+
+// Queue the drive along road `e` (direction `dir`) from edge position s0 up to the stop line at node `to`.
+function queueEdge(car, e, dir, s0, lane, to, arm, ex) {
+  const s1 = stopS(to, arm);
+  const marks = [];
+  for (const c of world.crossings) if (c.e === e && (c.s - s0) * dir > 4 && (s1 - c.s) * dir > 0) marks.push({ s: c.s - dir * 4.5, g: { type: c.kind, c } });
+  for (const lx of world.levelX) if (lx.e === e && (lx.s - s0) * dir > 8 && (s1 - lx.s) * dir > 0) marks.push({ s: lx.s - dir * 9, g: { type: 'lx', lx } });
+  for (const h of e.humps) if ((h - s0) * dir > 2 && (s1 - h) * dir > 0) marks.push({ s: h - dir * 8, g: { type: 'hump', s: h } });
+  if (lane === 0 && lanesOf(e, dir) === 1 && lanesOf(e, -dir) > 0)
+    for (const [lo, hi] of e.obst[dir] || []) {
+      const start = dir > 0 ? lo : hi, end = dir > 0 ? hi : lo;
+      if ((start - s0) * dir > 14 && (s1 - end) * dir > 0) {
+        const a = pointAt(e, start), b = pointAt(e, end);
+        marks.push({ s: start - dir * 12, g: { type: 'obst', ax: a.x, ay: a.y, bx: b.x, by: b.y, e, dir } });
+      }
     }
+  const ss = [];
+  for (let s = s0; (s1 - s) * dir > 0; s += dir * 5) ss.push(s);
+  ss.push(s1);
+  for (const m of marks) ss.push(m.s);
+  ss.sort((p, q) => (p - q) * dir);
+  for (const s of ss) {
+    const p = pointAt(e, s, laneLat(e, dir, lane) + bulgeAt(e, dir, lane, s));
+    pushPt(car, p.x, p.y);
+    for (const m of marks) if (m.s === s && !m.done) { m.done = true; car.gates.push({ ...m.g, s: pathEnd(car) }); }
   }
-  pushPt(car, laneIn(to, arm, stopDist(to)));
-  car.gates.push({ type: to.type, s: pathEnd(car), node: to, arm });
-  car.next = { node: to, arm };
+  const t = gateType(to, arm, ex);
+  if (t) car.gates.push({ type: t, s: pathEnd(car), node: to, arm, ex, lane });
+  car.next = { node: to, arm, ex, lane, e, dir };
+}
+
+function junctionPath(car, n, armIn, laneIn, armOut, laneOut) {
+  const eI = armIn.e, dI = dirIn(armIn), eO = armOut.e, dO = -dirIn(armOut);
+  const pin = pointAt(eI, stopS(n, armIn), laneLat(eI, dI, laneIn));
+  const pout = pointAt(eO, stopS(n, armOut), laneLat(eO, dO, laneOut));
+  if (n.type === 'rb' || n.type === 'mini') {
+    const inner = n.ringLanes > 1 && lanesOf(eI, dI) > 1 && laneIn === lanesOf(eI, dI) - 1;
+    const Ro = n.type === 'mini' ? Math.max(3.4, n.ringR * 0.62) : n.ringR - LANE_W * 0.55;
+    const Ri = inner ? n.ringR - LANE_W * 1.5 : Ro;
+    const a0 = Math.atan2(pin.y - n.y, pin.x - n.x);
+    let a1 = Math.atan2(pout.y - n.y, pout.x - n.x);
+    while (a1 < a0 + 0.3) a1 += TAU;
+    const steps = Math.max(4, Math.ceil((a1 - a0) / 0.1));
+    for (let k = 1; k < steps; k++) {
+      const t = k / steps, a = a0 + (a1 - a0) * t;
+      const r = Ri + (Ro - Ri) * clamp((t - 0.7) / 0.3, 0, 1);
+      const ein = clamp(1 - k / 2, 0, 1), eout = clamp(1 - (steps - k) / 2, 0, 1);   // blend from the entry and into the exit
+      let x = n.x + Math.cos(a) * r, y = n.y + Math.sin(a) * r;
+      x += (pin.x - x) * ein * 0.4 + (pout.x - x) * eout * 0.4; y += (pin.y - y) * ein * 0.4 + (pout.y - y) * eout * 0.4;
+      pushPt(car, x, y);
+    }
+    pushPt(car, pout.x, pout.y);
+    return;
+  }
+  const hIn = dI > 0 ? pin.ang : pin.ang + Math.PI, hOut = dO > 0 ? pout.ang : pout.ang + Math.PI;
+  const d = Math.hypot(pout.x - pin.x, pout.y - pin.y), k = d * 0.42;
+  const c1 = [pin.x + Math.cos(hIn) * k, pin.y + Math.sin(hIn) * k], c2 = [pout.x - Math.cos(hOut) * k, pout.y - Math.sin(hOut) * k];
+  const N = Math.max(2, Math.ceil(d / 2.5));
+  for (let i = 1; i <= N; i++) {
+    const t = i / N, u = 1 - t;
+    pushPt(car, u * u * u * pin.x + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * pout.x,
+      u * u * u * pin.y + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * pout.y);
+  }
 }
 
 function planNext(car) {
-  const { node: n, arm } = car.next;
-  let choices = n.arms.filter(a => a !== arm);
-  if (!choices.length) choices = [arm];
-  // Prefer going straight a bit more often, like real traffic.
-  const straight = (arm + 2) % 4;
-  let ex = choices[(Math.random() * choices.length) | 0];
-  if (choices.includes(straight) && Math.random() < 0.35) ex = straight;
-  const g = car.gates[car.gates.length - 1];
-  if (g && g.node === n) g.exit = ex;
-  for (const p of junctionPath(n, arm, ex)) pushPt(car, p);
-  pushPt(car, laneOut(n, ex, stopDist(n)));
-  const e = n.edges[ex];
-  queueStreet(car, e, e.a === n ? e.b : e.a);
-  // Drop path we have already driven.
-  while (car.cum.length > 4 && car.cum[2] < car.s - 1) {
-    const off = car.cum[1];
-    car.pts.shift(); car.cum.shift();
+  const { node: n, arm, ex, lane } = car.next;
+  const e2 = ex.e, dir2 = -dirIn(ex);
+  const to2 = dir2 > 0 ? e2.b : e2.a;
+  const arm2 = to2.arms.find(a => a.e === e2 && a.end === (dir2 > 0 ? 'b' : 'a'));
+  const ex2 = chooseExit(car, to2, arm2);
+  const lane2 = laneFor(car, e2, dir2, to2, arm2, ex2);
+  junctionPath(car, n, arm, lane, ex, lane2);
+  queueEdge(car, e2, dir2, stopS(n, ex), lane2, to2, arm2, ex2);
+  let cut = 0;                                   // drop path already driven
+  while (cut < car.cum.length - 3 && car.cum[cut + 2] < car.s - 2) cut++;
+  if (cut > 0) {
+    const off = car.cum[cut];
+    car.pts.splice(0, cut); car.cum.splice(0, cut);
     for (let k = 0; k < car.cum.length; k++) car.cum[k] -= off;
     car.s -= off;
-    for (const gt of car.gates) gt.s -= off;
+    for (const g of car.gates) g.s -= off;
+    car.gates = car.gates.filter(g => g.s > car.s - 3);
   }
-  car.gates = car.gates.filter(gt => gt.s > car.s - 2);
 }
 
-function spawnCar(edge, forward, along, R) {
-  const from = forward ? edge.a : edge.b, to = forward ? edge.b : edge.a;
-  const d = forward ? DIRS[edge.dir] : DIRS[(edge.dir + 2) % 4], l = leftOf(d);
-  const car = { pts: [], cum: [], gates: [], s: 0, speed: 0, len: 4.3, wid: 1.8, wait: 0, stunned: 0,
-    color: CAR_COLORS[(R() * CAR_COLORS.length) | 0], x: 0, y: 0, heading: Math.atan2(d[1], d[0]),
-    eager: 0.85 + R() * 0.2, ai: true, kind: R() < 0.08 ? 'bus' : R() < 0.15 ? 'van' : 'car', ind: 0 };
-  if (car.kind === 'bus') { car.len = 10; car.wid = 2.5; car.color = '#c8102e'; }
-  if (car.kind === 'van') { car.len = 5.2; car.wid = 2; car.color = '#f2f2ee'; }
-  pushPt(car, [from.x + d[0] * along + l[0] * LANE, from.y + d[1] * along + l[1] * LANE]);
-  queueStreet(car, edge, to);
+function spawnCar(e, dir, s, kind, R) {
+  const to = dir > 0 ? e.b : e.a, arm = to.arms.find(a => a.e === e && a.end === (dir > 0 ? 'b' : 'a'));
+  const car = { pts: [], cum: [], gates: [], s: 0, speed: 0, wait: 0, stunned: 0, ai: true, ind: 0, kind,
+    len: 4.3, wid: 1.8, color: CAR_COLORS[(R() * CAR_COLORS.length) | 0], eager: 0.88 + R() * 0.16, x: 0, y: 0, heading: 0 };
+  if (kind === 'bus') { car.len = 10.5; car.wid = 2.55; car.color = '#c8102e'; car.eager = 0.8; car.maxV = 13; }
+  if (kind === 'van') { car.len = 5.3; car.wid = 2; car.color = R() < 0.5 ? '#f2f2ee' : '#2d4f86'; }
+  if (kind === 'taxi') { car.color = '#151515'; car.len = 4.6; }
+  if (kind === 'tractor') { car.len = 4.8; car.wid = 2.3; car.color = '#3f7d2c'; car.maxV = 7; }
+  const ex = chooseExit(car, to, arm), lane = laneFor(car, e, dir, to, arm, ex);
+  queueEdge(car, e, dir, s, lane, to, arm, ex);
   car.x = car.pts[0][0]; car.y = car.pts[0][1];
+  car.heading = car.pts[1] ? Math.atan2(car.pts[1][1] - car.pts[0][1], car.pts[1][0] - car.pts[0][0]) : 0;
   traffic.cars.push(car);
   return car;
 }
 
+function spawnTraffic(R, avoid) {
+  traffic.cars.length = 0;
+  const weighted = world.edges.map(e => ({ e, w: e.len * (e.lanesF + e.lanesB) * (e.district === 'city' ? 1.7 : e.kind === 'single' ? 0.3 : 1) }));
+  const total = weighted.reduce((a, b) => a + b.w, 0);
+  const pickEdge = () => { let r = R() * total; for (const x of weighted) if ((r -= x.w) <= 0) return x.e; return weighted[0].e; };
+  let tries = 0;
+  const add = (kind, filter) => {
+    while (tries++ < 6000) {
+      const e = pickEdge();
+      if (filter && !filter(e)) continue;
+      const dirs = [1, -1].filter(d => lanesOf(e, d));
+      const dir = dirs[(R() * dirs.length) | 0];
+      if (e.len - e.a.r - e.b.r < 40) continue;
+      const s = e.a.r + 15 + R() * (e.len - e.a.r - e.b.r - 30);
+      const p = pointAt(e, s);
+      if (avoid && Math.hypot(p.x - avoid.x, p.y - avoid.y) < 45) continue;
+      if (traffic.cars.some(c => Math.hypot(c.x - p.x, c.y - p.y) < 12)) continue;
+      if (world.levelX.some(l => Math.hypot(l.x - p.x, l.y - p.y) < 20)) continue;
+      spawnCar(e, dir, s, kind, R);
+      return;
+    }
+  };
+  for (let k = 0; k < 7; k++) add('bus', e => e.district === 'city');
+  for (let k = 0; k < 14; k++) add('taxi', e => e.district === 'city');
+  for (let k = 0; k < 3; k++) add('tractor', e => e.kind === 'rural' || e.kind === 'single');
+  for (let k = 0; k < 12; k++) add('van');
+  for (let k = 0; k < 95; k++) add('car');
+}
+
+// AI traffic, part 2: driving along the planned path, waiting at gates, and pedestrians.
+const speedOf = (o) => o.ai ? o.speed : Math.hypot(o.vx, o.vy);
+const inBox = (o, n, pad = 1) => (o.x - n.x) ** 2 + (o.y - n.y) ** 2 < (n.r + pad) ** 2;
+// Is vehicle `o` driving towards node `n` (optionally along arm `arm`) and within maxD?
+function approaching(o, n, maxD, arm) {
+  const dx = n.x - o.x, dy = n.y - o.y, d = Math.hypot(dx, dy);
+  if (d > maxD || d < n.r * 0.6 || speedOf(o) < 1.5) return false;
+  if ((Math.cos(o.heading) * dx + Math.sin(o.heading) * dy) / d < 0.75) return false;
+  return !arm || Math.abs(angDiff(Math.atan2(o.y - n.y, o.x - n.x), arm.ang)) < 0.5;
+}
+const crossingBusy = (c) => traffic.peds.some(p => p.c === c && p.onRoad);
+const redish = (st, dist) => st === 'R' || st === 'RA' || (st === 'A' && dist > 10);
+
 function posAt(car, s) {
-  let k = 0;
-  while (k < car.cum.length - 2 && car.cum[k + 1] < s) k++;
-  const a = car.pts[k], b = car.pts[k + 1] || a;
-  const seg = (car.cum[k + 1] - car.cum[k]) || 1, t = clamp((s - car.cum[k]) / seg, 0, 1);
+  let lo = 0, hi = car.cum.length - 2;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (car.cum[m] <= s) lo = m; else hi = m - 1; }
+  const a = car.pts[lo], b = car.pts[lo + 1] || a;
+  const seg = (car.cum[lo + 1] - car.cum[lo]) || 1, t = clamp((s - car.cum[lo]) / seg, 0, 1);
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, Math.atan2(b[1] - a[1], b[0] - a[0])];
 }
 
-function gateBlocks(car, g, dist, time, others) {
-  if (g.type === 'zebra') return zebraOccupied(g.z);
-  if (g.type === 'lights') {
-    const st = lightState(g.node, g.arm % 2, time);
-    if (st === 'R' || st === 'RA' || (st === 'A' && dist > 10)) return true;
-    // Do not enter the junction while it is still blocked by stationary traffic.
-    const n = g.node;
-    return dist > 0.8 && others.some(o => o !== car && Math.abs(o.x - n.x) < W / 2 + 1 && Math.abs(o.y - n.y) < W / 2 + 1 && (o.ai ? o.speed : Math.hypot(o.vx, o.vy)) < 1);
-  }
-  if (g.type === 'rb') {
-    if (dist > 9) return false;
-    const n = g.node, entry = rbEntryAngle(g.arm);
-    for (const o of others) {
-      if (o === car) continue;
-      const r = Math.hypot(o.x - n.x, o.y - n.y);
-      if (r > RB_OUT + 0.5) continue;
-      const a = Math.atan2(o.y - n.y, o.x - n.x);
-      const rel = angDiff(entry, a);           // >0 when the other car is upstream, on our right
-      if (rel > -0.25 && rel < 1.9) return true;
+function gateBlocks(car, g, dist, time, near) {
+  const n = g.node;
+  switch (g.type) {
+    case 'zebra': return crossingBusy(g.c);
+    case 'puffin': return redish(puffinState(g.c, time), dist) || crossingBusy(g.c);
+    case 'lx': return g.lx.state !== 'open' || g.lx.barrier > 0.05;
+    case 'obst': {
+      if (dist > 14) return false;
+      const hx = Math.cos(car.heading), hy = Math.sin(car.heading);
+      return near.some(o => {
+        if (o === car || Math.cos(o.heading) * hx + Math.sin(o.heading) * hy > -0.5) return false;
+        const ax = o.x - g.ax, ay = o.y - g.ay, along = ax * hx + ay * hy, lat = -ax * hy + ay * hx;
+        return along > -4 && along < 60 && Math.abs(lat) < 8;
+      });
     }
-    return false;
-  }
-  if (g.type === 'give' && g.arm % 2 !== g.node.major) {
-    if (dist > 9) return false;
-    const n = g.node;
-    for (const o of others) {
-      if (o === car) continue;
-      const dx = n.x - o.x, dy = n.y - o.y, r = Math.hypot(dx, dy);
-      if (r > 30) continue;
-      const sp = o.ai ? o.speed : Math.hypot(o.vx, o.vy);
-      if (r < W / 2 + 1.5 && sp > 0.3) return true;                  // someone in the junction
-      const toward = (Math.cos(o.heading) * dx + Math.sin(o.heading) * dy) / (r || 1);
-      if (sp > 1.5 && toward > 0.6) return true;                      // someone approaching
+    case 'lights': {
+      if (redish(lightState(n, g.arm, time), dist)) return true;
+      if (dist > 1 && near.some(o => o !== car && inBox(o, n, 0) && speedOf(o) < 1)) return true;   // exit not clear
+      if (dist < 6 && turnOf(g.arm, g.ex) > 0.5) { const opp = oppositeArm(n, g.arm); if (opp && near.some(o => o !== car && approaching(o, n, 40, opp))) return true; }
+      return false;
+    }
+    case 'rb': {
+      if (n.signals && redish(lightState(n, g.arm, time), dist)) return true;
+      if (dist > 10) return false;
+      const entry = Math.atan2(car.y - n.y, car.x - n.x);
+      return near.some(o => {
+        if (o === car) return false;
+        const dx = o.x - n.x, dy = o.y - n.y;
+        if (Math.hypot(dx, dy) > n.r + 0.5) return false;
+        if (n.type === 'mini') return speedOf(o) > 0.5;
+        if (speedOf(o) < 0.8) return false;
+        const rel = angDiff(entry, Math.atan2(dy, dx));     // >0: upstream, coming from our right
+        return rel > -0.25 && rel < 1.7;
+      });
+    }
+    case 'give': case 'stop': case 'unmarked': {
+      if (g.type === 'stop' && !g.stopped) { if (dist < 2.5 && car.speed < 0.3) g.stopped = true; else return true; }
+      if (dist > 10) return false;
+      return near.some(o => {
+        if (o === car) return false;
+        if (inBox(o, n, 0.5) && speedOf(o) > 0.5) return true;
+        return n.arms.some(a => a !== g.arm && (g.type === 'unmarked' || a.major) && approaching(o, n, g.type === 'unmarked' ? 22 : 38, a));
+      });
+    }
+    case 'right': {
+      if (dist > 8) return false;
+      const opp = oppositeArm(n, g.arm);
+      return near.some(o => o !== car && opp && approaching(o, n, 42, opp));
     }
   }
   return false;
 }
 
 function updateCars(dt, time, player) {
-  const others = traffic.cars.concat(player ? [player] : []);
+  const all = traffic.cars.concat(player ? [player] : []);
+  const B = 50, bucket = new Map();
+  for (const o of all) { const k = Math.floor(o.x / B) * 4096 + Math.floor(o.y / B); let l = bucket.get(k); if (!l) bucket.set(k, l = []); l.push(o); }
   for (const car of traffic.cars) {
     if (car.stunned > 0) { car.stunned -= dt; car.speed = 0; continue; }
-    if (pathEnd(car) - car.s < 40) planNext(car);
-    const edgeHere = edgeAtPoint(car.x, car.y);
-    const limit = (edgeHere ? edgeHere.edge.limit : 30) / MPH;
-    let want = limit * car.eager;
-    // Corners: slow for curvature a little ahead.
-    const [ax, ay, h1] = posAt(car, car.s + 8);
-    const bend = Math.abs(angDiff(h1, car.heading));
-    if (bend > 0.25) want = Math.min(want, 7.5);
-    if (nodeAtPoint(car.x, car.y)?.type === 'rb') want = Math.min(want, 8);
-    // Gates ahead.
+    if (pathEnd(car) - car.s < 70) planNext(car);
+    const near = [];
+    const ci = Math.floor(car.x / B), cj = Math.floor(car.y / B);
+    for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) { const l = bucket.get(i * 4096 + j); if (l) near.push(...l); }
+    const rq = roadAt(car.x, car.y);
+    let want = (rq ? rq.e.limit : 30) / MPH * car.eager;
+    if (car.maxV) want = Math.min(want, car.maxV);
+    if (rq && rq.e.kind === 'single' && near.some(o => o !== car && Math.cos(o.heading - car.heading) < -0.5 && Math.hypot(o.x - car.x, o.y - car.y) < 70)) want = Math.min(want, 6);
+    // Slow for bends ahead.
+    const h1 = posAt(car, car.s + 4)[2], h2 = posAt(car, car.s + 16)[2];
+    const bend = Math.abs(angDiff(h2, h1));
+    if (bend > 0.2) want = Math.min(want, bend > 0.6 ? 6.5 : 9);
     let waiting = false;
+    car.why = null;
     for (const g of car.gates) {
       const dist = g.s - car.s;
-      if (dist < -0.5 || dist > 45) continue;
-      if (g.go) continue;
-      if (dist < 0.6 && car.speed > 2) { g.go = true; continue; }   // already committed
-      const patient = g.type === 'lights' || g.type === 'zebra';   // never run a red light or a busy crossing
-      const blocks = gateBlocks(car, g, dist, time, others) && (patient || car.wait < 9);
-      if (blocks) { want = Math.min(want, Math.sqrt(Math.max(0, 2 * 4 * (dist - 1)))); waiting = dist < 3; break; }
-      else if (dist < 1) g.go = true;
-      if (g.type === 'rb' || (g.type === 'give' && g.arm % 2 !== g.node.major)) want = Math.min(want, 4 + dist * 0.6);
+      if (dist < -0.5 || dist > 50 || g.go) continue;
+      if (g.type === 'hump') { if (dist < 12) want = Math.min(want, 6.5); continue; }
+      if (dist < 0.6 && car.speed > 2) { g.go = true; continue; }
+      const patient = g.type === 'lights' || g.type === 'zebra' || g.type === 'puffin' || g.type === 'lx' || (g.type === 'rb' && g.node.signals);
+      if (gateBlocks(car, g, dist, time, near) && (patient || car.wait < 9)) {
+        want = Math.min(want, Math.sqrt(Math.max(0, 2 * 3.5 * (dist - 1))));
+        waiting = dist < 3; car.why = g.type; break;
+      } else if (dist < 1) g.go = true;
+      if (['rb', 'give', 'stop', 'unmarked', 'right'].includes(g.type)) want = Math.min(want, 4.5 + dist * 0.5);
     }
-    // Following: anything in front in our path.
+    // Following: anything ahead in our lane.
     const ch = Math.cos(car.heading), sh = Math.sin(car.heading);
-    for (const o of others) {
+    for (const o of near) {
       if (o === car) continue;
-      const dx = o.x - car.x, dy = o.y - car.y;
-      const f = dx * ch + dy * sh;
-      if (f <= 0 || f > 30) continue;
+      const dx = o.x - car.x, dy = o.y - car.y, f = dx * ch + dy * sh;
+      if (f <= 0 || f > 35) continue;
       const lat = -dx * sh + dy * ch;
-      if (Math.abs(lat) > 2.3) continue;
-      // Cross traffic inside a junction: yield briefly, then carry on so junctions never gridlock.
+      if (Math.abs(lat) > (car.wid + o.wid) / 2 + 0.4) continue;
       const hd = Math.abs(angDiff(o.heading, car.heading));
       if (o.ai && ((hd > 1.0 && f > 8) || (hd > 0.5 && car.wait > 1.5))) continue;
       const gap = f - (car.len + o.len) / 2 - 2;
-      want = Math.min(want, Math.sqrt(Math.max(0, 2 * 5 * gap)));
-      if (gap < 1.5) waiting = true;
+      want = Math.min(want, Math.sqrt(Math.max(0, 2 * 4.5 * gap)) + speedOf(o) * 0.5 * (hd < 0.5 ? 1 : 0));
+      if (gap < 1.5) { want = Math.min(want, 0); waiting = true; car.why = o; }
     }
     for (const p of traffic.peds) {
-      if (!p.onRoad) continue;
+      if (!p.onRoad || Math.abs(p.x - car.x) > 16 || Math.abs(p.y - car.y) > 16) continue;
       const dx = p.x - car.x, dy = p.y - car.y, f = dx * ch + dy * sh;
       if (f > 0 && f < 14 && Math.abs(-dx * sh + dy * ch) < 2.6) want = Math.min(want, Math.max(0, (f - 4) * 0.8));
     }
     car.wait = (car.speed < 0.3 && waiting) ? car.wait + dt : car.speed > 1.5 ? 0 : car.wait;
     car.braking = want < car.speed - 0.4 || (car.speed < 0.3 && waiting);
-    const acc = want > car.speed ? 2.6 : -7;
-    car.speed = want > car.speed ? Math.min(want, car.speed + acc * dt) : Math.max(want, car.speed + acc * dt);
+    car.speed = want > car.speed ? Math.min(want, car.speed + (car.kind === 'bus' || car.kind === 'tractor' ? 1.4 : 2.4) * dt) : Math.max(want, car.speed - 7 * dt);
     car.speed = Math.max(0, car.speed);
     car.s += car.speed * dt;
     const [x, y, h] = posAt(car, car.s);
     car.x = x; car.y = y;
     car.heading += angDiff(h, car.heading) * Math.min(1, dt * 10);
-    // Indicators for the next turn (AI signals too, so you learn to read them).
-    const ng = car.gates.find(g => g.node && g.s - car.s > -6 && g.s - car.s < 35 && g.exit !== undefined);
+    // Indicators for the next turn, so you can practise reading other drivers' signals.
+    const ng = car.gates.find(g => g.node && g.ex && g.s - car.s > -8 && g.s - car.s < 40);
     car.ind = 0;
-    if (ng && ng.node.type !== 'rb') { const turn = (ng.exit - (ng.arm + 2) + 8) % 4; car.ind = turn === 1 ? 1 : turn === 3 ? -1 : 0; }
-    if (ng && ng.node.type === 'rb') { const turn = (ng.exit - (ng.arm + 2) + 8) % 4; car.ind = turn === 3 ? -1 : turn === 1 ? 1 : 0; }
+    if (ng) {
+      if (ng.node.type === 'rb' || ng.node.type === 'mini') { const sw = rbSweep(ng.arm, ng.ex); car.ind = sw < 2.2 ? -1 : sw > 3.7 ? 1 : 0; }
+      else { const t = turnOf(ng.arm, ng.ex); car.ind = t > 0.5 ? 1 : t < -0.5 ? -1 : 0; }
+    }
   }
 }
 
-// ---- Pedestrians
-const PED_COLORS = ['#e4572e', '#2e86ab', '#f3a712', '#a23b72', '#3b1f2b', '#5d737e', '#7cb518', '#f0f0f0'];
-function zebraOccupied(z) { return traffic.peds.some(p => p.zebra === z && p.state === 'cross'); }
-
+// ---- Pedestrians: walkers along pavements, and people using the crossings.
+const PED_COLORS = ['#e4572e', '#2e86ab', '#f3a712', '#a23b72', '#3b1f2b', '#5d737e', '#7cb518', '#f0f0f0', '#1f3a5f', '#c44536'];
 function spawnPeds(R) {
-  const town = world.blocks.filter(b => b.town);
-  for (let k = 0; k < 120; k++) {
-    const b = town[(R() * town.length) | 0];
-    const loop = { x0: b.x0 + PAVE / 2, y0: b.y0 + PAVE / 2, x1: b.x1 - PAVE / 2, y1: b.y1 - PAVE / 2 };
-    const per = 2 * ((loop.x1 - loop.x0) + (loop.y1 - loop.y0));
-    traffic.peds.push({ kind: 'walk', loop, per, p: R() * per, dir: R() < 0.5 ? 1 : -1, v: 1.1 + R() * 0.5,
-      color: PED_COLORS[(R() * PED_COLORS.length) | 0], x: 0, y: 0, hit: 0, onRoad: false });
+  traffic.peds.length = 0;
+  const pav = world.edges.filter(e => e.pave && e.len - e.a.r - e.b.r > 30);
+  const w = pav.map(e => e.len * (e.district === 'city' ? 3 : e.district === 'village' ? 1.6 : e.district === 'suburb' ? 1.1 : 0.3));
+  const tot = w.reduce((a, b) => a + b, 0);
+  for (let k = 0; k < 260; k++) {
+    let r = R() * tot, i = 0; while ((r -= w[i]) > 0) i++;
+    const e = pav[Math.min(i, pav.length - 1)];
+    traffic.peds.push({ kind: 'walk', e, side: R() < 0.5 ? 1 : -1, s: e.a.r + 6 + R() * (e.len - e.a.r - e.b.r - 12), dir: R() < 0.5 ? 1 : -1,
+      v: 1.1 + R() * 0.5, color: PED_COLORS[(R() * PED_COLORS.length) | 0], x: 0, y: 0, hit: 0, onRoad: false });
   }
-  for (const z of world.zebras) for (let k = 0; k < 2; k++) {
-    traffic.peds.push({ kind: 'cross', zebra: z, side: k ? 1 : -1, lat: (k ? 1 : -1) * (W / 2 + 1.4), off: (R() - 0.5) * 2,
-      state: 'wait', timer: 2 + R() * 8, v: 1.2 + R() * 0.3, color: PED_COLORS[(R() * PED_COLORS.length) | 0], x: 0, y: 0, hit: 0, onRoad: false });
+  for (const c of world.crossings) for (let k = 0; k < (c.kind === 'puffin' ? 4 : 2); k++) {
+    const side = k % 2 ? 1 : -1;
+    traffic.peds.push({ kind: 'cross', c, side, lat: side * (c.e.W / 2 + 1.4), off: (R() - 0.5) * 2.2, state: 'wait', timer: 2 + R() * 8,
+      v: 1.2 + R() * 0.3, color: PED_COLORS[(R() * PED_COLORS.length) | 0], x: 0, y: 0, hit: 0, onRoad: false });
   }
 }
 
-function updatePeds(dt, player) {
+function updatePeds(dt, player, time) {
   for (const p of traffic.peds) {
     if (p.hit > 0) { p.hit -= dt; continue; }
     if (p.kind === 'walk') {
-      p.p = (p.p + p.dir * p.v * dt + p.per) % p.per;
-      const L = p.loop, w = L.x1 - L.x0, h = L.y1 - L.y0;
-      let s = p.p;
-      if (s < w) { p.x = L.x0 + s; p.y = L.y0; }
-      else if ((s -= w) < h) { p.x = L.x1; p.y = L.y0 + s; }
-      else if ((s -= h) < w) { p.x = L.x1 - s; p.y = L.y1; }
-      else { s -= w; p.x = L.x0; p.y = L.y1 - s; }
+      const e = p.e, lo = e.a.r + PAVE + 2, hi = e.len - e.b.r - PAVE - 2;
+      p.s += p.dir * p.v * dt;
+      if (p.s < lo) { p.s = lo; p.dir = 1; } if (p.s > hi) { p.s = hi; p.dir = -1; }
+      const q = pointAt(e, p.s, p.side * (e.W / 2 + PAVE * 0.5));
+      p.x = q.x; p.y = q.y; p.heading = p.dir > 0 ? q.ang : q.ang + Math.PI;
       continue;
     }
-    const z = p.zebra;
+    const c = p.c, half = c.e.W / 2 + 1.4;
     if (p.state === 'wait') {
       p.timer -= dt;
       if (p.timer <= 0) {
-        // Step out only if nothing is close and fast — the way a cautious pedestrian would.
-        const near = traffic.cars.concat(player ? [player] : []).some(c => {
-          const sp = c.ai ? c.speed : Math.hypot(c.vx, c.vy);
-          const d = Math.hypot(c.x - z.x, c.y - z.y);
+        let go;
+        if (c.kind === 'puffin') go = puffinState(c, time) === 'R';
+        else go = !traffic.cars.concat(player ? [player] : []).some(v => {
+          const sp = speedOf(v), d = Math.hypot(v.x - c.x, v.y - c.y);
           return d < 8 || (d < 9 + sp * 2.2 && sp > 2);
         });
-        if (!near) { p.state = 'cross'; p.target = -p.side * (W / 2 + 1.4); }
-        else p.timer = 0.5;
+        if (go) { p.state = 'cross'; p.target = -p.side * half; } else p.timer = 0.5;
       }
     } else {
       const step = Math.sign(p.target - p.lat) * p.v * dt;
       if (Math.abs(p.target - p.lat) <= Math.abs(step)) { p.lat = p.target; p.side = -p.side; p.state = 'wait'; p.timer = 5 + Math.random() * 12; }
       else p.lat += step;
     }
-    p.onRoad = p.state === 'cross' && Math.abs(p.lat) < W / 2 + 0.3;
-    if (z.horiz) { p.x = z.x + p.off; p.y = z.y + p.lat; } else { p.x = z.x + p.lat; p.y = z.y + p.off; }
+    p.onRoad = p.state === 'cross' && Math.abs(p.lat) < c.e.W / 2 + 0.3;
+    const q = pointAt(c.e, c.s + p.off, p.lat);
+    p.x = q.x; p.y = q.y;
   }
 }
 
-// The player's car: arcade "GTA-style" handling (grip, slides, handbrake turns) plus the UK rule checks.
+// The player's car. Handling follows the usual recipe for keyboard driving games:
+// pedals and steering ramp in and out instead of snapping (keys are all-or-nothing), steering lock
+// shrinks with speed, yaw comes from a bicycle model (wheelbase + steering angle), a grip limit makes
+// the car run wide if you overcook a bend, and the rear only lets go with the handbrake.
+// Optional lane assist aligns the car with the lane when you are not steering.
+const WHEELBASE = 2.6;
 function makePlayer(x, y, heading) {
-  return { x, y, heading, vx: 0, vy: 0, yaw: 0, steer: 0, len: 4.4, wid: 1.85, ind: 0, indHeading: 0,
-    color: '#f7d117', ai: false, speed: 0, gear: 'D', brakeLight: false, reversing: false,
-    // rule-tracking state
-    wrongSide: 0, wrongSideFault: false, overLimit: 0, node: null, nodeEntry: null, lastEdge: null,
-    lastIndDir: 0, lastIndT: -99, rbAngle: 0, rbTurned: 0, cool: {}, approachTip: null };
+  return { x, y, heading, vx: 0, vy: 0, steer: 0, thr: 0, brk: 0, len: 4.4, wid: 1.85, ind: 0, indHeading: 0,
+    color: '#f7d117', ai: false, speed: 0, brakeLight: false, reversing: false, limiter: false, limit: 30,
+    wrongSide: 0, wrongSideFault: false, overLimit: 0, node: null, nodeEntry: null, lastEdge: null, lastQ: null,
+    lastIndDir: 0, lastIndT: -99, rbTurned: 0, rbAngle: 0, cool: {}, busT: 0, hogT: 0, boxT: 0, approachMin: 99 };
 }
+const approach = (v, t, step) => v < t ? Math.min(t, v + step) : Math.max(t, v - step);
 
-// Three circles along the body approximate the car for collisions.
 function bodyCircles(c) {
   const ch = Math.cos(c.heading), sh = Math.sin(c.heading), q = c.len / 2 - c.wid / 2;
+  if (c.kind === 'bus') return [-4, -2, 0, 2, 4].map(o => [c.x + ch * o, c.y + sh * o]);
   return [[c.x + ch * q, c.y + sh * q], [c.x, c.y], [c.x - ch * q, c.y - sh * q]];
 }
 
@@ -1062,40 +1620,58 @@ function updatePlayerPhysics(p, inp, dt) {
   const ch = Math.cos(p.heading), sh = Math.sin(p.heading);
   let vF = p.vx * ch + p.vy * sh, vR = -p.vx * sh + p.vy * ch;
   const surf = surfaceAt(p.x, p.y);
-  // Steering eases in and out like a real wheel; less lock at speed.
-  const target = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
-  p.steer += (target - p.steer) * Math.min(1, dt * (target ? 6 : 9));
-  // Engine & brakes (automatic gearbox: brake to a stop, hold brake to reverse).
-  const top = 52;
-  if (inp.up) {
-    if (vF < -0.5) vF += 12 * dt;
-    else vF += (6.2 * (1 - Math.max(0, vF) / top) + 0.4) * dt;
-  }
+  // Pedals: press gradually, release quickly.
+  p.thr = approach(p.thr, inp.up ? 1 : 0, dt * (inp.up ? 1.6 : 6));
+  p.brk = approach(p.brk, inp.down ? 1 : 0, dt * (inp.down ? 4 : 8));
+  let thr = p.thr;
+  if (p.limiter) thr *= clamp(((p.limit || 30) / MPH - 0.2 - vF) / 1.5, 0, 1);
+  // Engine: about 4 s to 30 mph, 11 s to 60 mph, tops out near 100 mph.
+  if (vF > -0.5) vF += thr * 3.4 * Math.max(0, 1 - (vF / 46) ** 2) * dt;
+  else if (thr > 0) vF = Math.min(0, vF + 8 * thr * dt);
   p.brakeLight = false;
-  if (inp.down) {
-    if (vF > 0.4) { vF -= 13 * dt; p.brakeLight = true; }
-    else vF = Math.max(-9, vF - 4 * dt);
+  if (p.brk > 0.02) {
+    if (vF > 0.3) { vF = Math.max(0, vF - 9 * p.brk * dt); p.brakeLight = true; }
+    else if (inp.down && !inp.up) vF = Math.max(-5, vF - 2.5 * dt);   // stopped: holding brake reverses
   }
   p.reversing = vF < -0.3;
-  // Drag, rolling resistance and surface.
-  const surfDrag = surf === 'grass' ? 1.6 : surf === 'pavement' ? 0.6 : 0;
-  vF -= vF * (0.12 + surfDrag) * dt + 0.0009 * vF * Math.abs(vF) * dt;
-  if (!inp.up && !inp.down) vF -= Math.sign(vF) * Math.min(Math.abs(vF), 0.6 * dt);
-  // Handbrake: rear grip drops, the car slides.
-  const hb = inp.hand;
-  if (hb) vF -= Math.sign(vF) * Math.min(Math.abs(vF), 5 * dt);
-  const grip = hb ? 1.4 : surf === 'grass' ? 4 : 10;
-  vR *= Math.exp(-grip * dt);
-  // Yaw from steering geometry; the yaw rate lags a little so the car feels weighty.
-  const maxSteer = 0.62 / (1 + Math.abs(vF) / 16);
-  let yawT = vF * Math.tan(p.steer * maxSteer) / 2.6;
-  if (hb) yawT *= 1.7;
-  p.yaw += (yawT - p.yaw) * Math.min(1, dt * (hb ? 4 : 8));
-  p.heading += p.yaw * dt;
+  // Drag, rolling resistance, engine braking, surface.
+  const surfDrag = surf === 'grass' ? 1.3 : surf === 'pavement' ? 0.4 : 0;
+  vF -= (0.0007 * vF * Math.abs(vF) + (0.02 + surfDrag) * vF) * dt;
+  if (thr < 0.05 && p.brk < 0.05) vF = approach(vF, 0, 0.45 * dt);
+  if (inp.hand) vF = approach(vF, 0, 4.5 * dt);
+  // Steering wheel: turn in at a steady rate, self-centre faster.
+  const target = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
+  const rate = target === 0 ? 4.5 : (p.steer * target < 0 ? 6 : 2.2);
+  p.steer = approach(p.steer, target, rate * dt);
+  const v = Math.abs(vF);
+  const maxSteer = 0.62 / (1 + Math.pow(v / 8, 1.3));          // speed-sensitive steering
+  let yaw = vF * Math.tan(p.steer * maxSteer) / WHEELBASE;
+  const aMax = surf === 'grass' ? 3.5 : 7.8;                    // grip limit: run wide instead of turning tighter
+  if (Math.abs(yaw * vF) > aMax) yaw = Math.sign(yaw) * aMax / Math.max(1, v);
+  if (inp.hand && v > 4) yaw *= 1.7;
+  // Lane assist while you are not steering.
+  const assist = game.settings.assist;
+  if (target === 0 && assist !== 'off' && vF > 2.5 && !inp.hand) {
+    const q = roadAt(p.x, p.y);
+    if (q && q.dist < q.e.W / 2 + 0.5 && !nodeAt(p.x, p.y)) {
+      const dir = Math.cos(p.heading - q.ang) > 0 ? 1 : -1;
+      const laneH = dir > 0 ? q.ang : q.ang + Math.PI;
+      let want = laneH;
+      if (assist === 'strong' && lanesOf(q.e, dir) > 0) {
+        let best = null;
+        for (let i = 0; i < lanesOf(q.e, dir); i++) { const l = laneLat(q.e, dir, i); if (best === null || Math.abs(q.lat - l) < Math.abs(q.lat - best)) best = l; }
+        const err = (q.lat - best) * dir;                         // >0: left of the lane centre
+        want = laneH + clamp(err * 0.06, -0.1, 0.1);
+      }
+      const d = angDiff(want, p.heading);
+      if (Math.abs(angDiff(laneH, p.heading)) < 0.45) yaw += d * (assist === 'strong' ? 2.2 : 1.4);
+    }
+  }
+  p.heading += yaw * dt;
+  // Sideways slip dies away quickly unless the handbrake is on.
+  vR *= Math.exp(-(inp.hand ? 1.2 : surf === 'grass' ? 5 : 16) * dt);
   const nch = Math.cos(p.heading), nsh = Math.sin(p.heading);
-  // Part of the old sideways motion carries into the new heading: this is the drift.
-  p.vx = nch * vF - nsh * vR;
-  p.vy = nsh * vF + nch * vR;
+  p.vx = nch * vF - nsh * vR; p.vy = nsh * vF + nch * vR;
   const ox = p.x, oy = p.y;
   p.x += p.vx * dt; p.y += p.vy * dt;
   p.speed = vF;
@@ -1103,16 +1679,19 @@ function updatePlayerPhysics(p, inp, dt) {
 }
 
 function solidAt(x, y) {
-  if (x < 1 || y < 1 || x > WORLD_W - 1 || y > WORLD_H - 1) return 'wall';
+  const s = surfaceAt(x, y);
+  if (s === 'wall' || s === 'island' || s === 'median') return s;
   if (buildingAt(x, y)) return 'building';
-  const n = nodeAtPoint(x, y);
-  if (n && n.type === 'rb' && Math.hypot(x - n.x, y - n.y) < RB_IN - 0.3) return 'island';
   for (const t of world.trees) if (Math.abs(t.x - x) < 1 && Math.abs(t.y - y) < 1 && Math.hypot(t.x - x, t.y - y) < 0.8) return 'tree';
+  for (const o of world.obstacles) { const q = pointAt(o.e, o.s, o.side * (o.e.W / 2 - o.e.laneW * 0.45)); if (Math.abs(q.x - x) < 4 && Math.abs(q.y - y) < 4 && Math.hypot(q.x - x, q.y - y) < 2.2) return 'kerb build-out'; }
+  for (const lx of world.levelX) if (lx.barrier > 0.6 && Math.hypot(lx.x - x, lx.y - y) < lx.e.W / 2 + 0.5) {
+    const along = (x - lx.x) * Math.cos(lx.ang) + (y - lx.y) * Math.sin(lx.ang);
+    if (Math.abs(Math.abs(along) - 7) < 0.6) return 'barrier';
+  }
   return null;
 }
 
-function collidePlayer(p, prev, time) {
-  // Static obstacles: test the four corners.
+function collidePlayer(p, prev) {
   const ch = Math.cos(p.heading), sh = Math.sin(p.heading), hl = p.len / 2, hw = p.wid / 2;
   let hit = null;
   for (const [a, b] of [[hl, hw], [hl, -hw], [-hl, hw], [-hl, -hw], [hl, 0], [-hl, 0]]) {
@@ -1122,38 +1701,47 @@ function collidePlayer(p, prev, time) {
   if (hit) {
     const sp = Math.hypot(p.vx, p.vy);
     p.x = prev.ox; p.y = prev.oy;
-    p.vx *= -0.25; p.vy *= -0.25; p.yaw *= 0.3;
+    p.vx *= -0.25; p.vy *= -0.25;
     if (sp > 3) {
       game.bump(sp);
-      const what = { wall: 'a wall', building: 'a building', island: 'the roundabout island', tree: 'a tree' }[hit];
+      const what = { wall: 'the edge of the map', building: 'a building', island: 'the roundabout island', tree: 'a tree', median: 'the central reservation barrier', barrier: 'a level-crossing barrier' }[hit] || hit;
       fault('crash', 'serious', 'Control', `Hit ${what}`, 'Keep your speed down so you can stop or steer in the distance you can see.', 'safety', 3);
     }
   }
-  // Other vehicles.
   const mine = bodyCircles(p);
-  for (const c of traffic.cars) {
+  const vehicles = traffic.cars.concat(world.parked);
+  for (const c of vehicles) {
     if (Math.abs(c.x - p.x) > 14 || Math.abs(c.y - p.y) > 14) continue;
     const rr = (p.wid + c.wid) / 2 * 0.95;
-    const theirs = c.kind === 'bus' ? [-4, -2, 0, 2, 4].map(o => [c.x + Math.cos(c.heading) * o, c.y + Math.sin(c.heading) * o]) : bodyCircles(c);
-    for (const m of mine) for (const t of theirs) {
+    for (const m of mine) for (const t of bodyCircles(c)) {
       const dx = m[0] - t[0], dy = m[1] - t[1], d = Math.hypot(dx, dy);
-      if (d < rr && d > 0.001) {
-        const nx = dx / d, ny = dy / d, push = rr - d;
-        p.x += nx * push; p.y += ny * push;
-        const vn = p.vx * nx + p.vy * ny;
-        const rel = Math.abs(vn - (Math.cos(c.heading) * nx + Math.sin(c.heading) * ny) * c.speed);
-        if (vn < 0) { p.vx -= 1.4 * vn * nx; p.vy -= 1.4 * vn * ny; }
-        c.stunned = 2.5; c.speed = 0;
-        if (rel > 1.5) {
-          game.bump(rel);
-          fault('crash', rel > 8 ? 'dangerous' : 'serious', 'Control', 'Collided with another vehicle',
-            'Keep a two-second gap and check all around before you change position.', 'safety', 3);
-        }
+      if (d >= rr || d < 0.001) continue;
+      const nx = dx / d, ny = dy / d;
+      p.x += nx * (rr - d); p.y += ny * (rr - d);
+      const vn = p.vx * nx + p.vy * ny;
+      const rel = Math.abs(vn - (c.ai ? (Math.cos(c.heading) * nx + Math.sin(c.heading) * ny) * c.speed : 0));
+      if (vn < 0) { p.vx -= 1.4 * vn * nx; p.vy -= 1.4 * vn * ny; }
+      if (c.ai) { c.stunned = 2.5; c.speed = 0; }
+      if (rel > 1.5) {
+        game.bump(rel);
+        fault('crash', rel > 8 ? 'dangerous' : 'serious', 'Control', c.parked ? 'Hit a parked car' : 'Collided with another vehicle',
+          'Keep a two-second gap and check all around before you change position.', 'safety', 3);
+      }
+      break;
+    }
+  }
+  // Trains.
+  for (const tr of world.trains) {
+    if (tr.wait > 0) continue;
+    for (let o = 0; o < tr.len; o += 3) {
+      const q = railPoint(tr.s - tr.dir * o);
+      if (Math.hypot(q.x - p.x, q.y - p.y) < 2.6) {
+        game.bump(20); p.vx = Math.cos(q.ang) * tr.dir * 8; p.vy = Math.sin(q.ang) * tr.dir * 8;
+        fault('train', 'dangerous', 'Level crossings', 'Hit by a train', 'Never enter a level crossing when the lights show or the barriers are down (Rule 293).', 'general', 5);
         break;
       }
     }
   }
-  // Pedestrians.
   const sp = Math.hypot(p.vx, p.vy);
   for (const ped of traffic.peds) {
     if (ped.hit > 0 || Math.abs(ped.x - p.x) > 5 || Math.abs(ped.y - p.y) > 5) continue;
@@ -1161,7 +1749,6 @@ function collidePlayer(p, prev, time) {
       const dx = ped.x - m[0], dy = ped.y - m[1], d = Math.hypot(dx, dy);
       if (d < p.wid / 2 + 0.4) {
         ped.hit = 2.5;
-        if (ped.kind === 'walk') { ped.x += dx / (d || 1) * 1.5; ped.y += dy / (d || 1) * 1.5; }
         p.vx *= 0.3; p.vy *= 0.3;
         if (sp > 0.8) fault('ped', 'dangerous', 'Pedestrians', 'Hit a pedestrian',
           'Pedestrians are the most vulnerable road users. Since 2022 drivers carry the greatest responsibility (Rule H1).', 'crossing', 3);
@@ -1173,433 +1760,729 @@ function collidePlayer(p, prev, time) {
 
 function fault(key, sev, cat, msg, tip, topic, cool = 8) {
   const p = game.player, t = game.time;
-  if (p.cool[key] && t - p.cool[key] < cool) return;
+  if (p.cool[key] !== undefined && t - p.cool[key] < cool) return;
   p.cool[key] = t;
   game.addFault({ sev, cat, msg, tip, topic, t });
+}
+
+// UK rule checks for the player, marked like the practical test (driving / serious / dangerous faults).
+const SIG_TIP = 'Mirrors, Signal, Manoeuvre. Signal in good time (Rule 103).';
+
+function laneIndex(e, dir, lat) {
+  const idx = dir > 0 ? Math.floor((e.W / 2 - lat) / e.laneW) : Math.floor((lat + e.W / 2) / e.laneW);
+  return clamp(idx, 0, Math.max(0, lanesOf(e, dir) - 1));
+}
+// Is the player passing something on its left (parked car, slow vehicle, build-out)? Then crossing the centre line is fine.
+function passingSomething(p, q, dir) {
+  if ((q.e.obst[dir] || []).some(([lo, hi]) => q.s > lo - 16 && q.s < hi + 16)) return true;
+  const hx = Math.cos(p.heading), hy = Math.sin(p.heading);
+  return traffic.cars.some(c => {
+    const dx = c.x - p.x, dy = c.y - p.y;
+    if (Math.abs(dx) > 30 || Math.abs(dy) > 30) return false;
+    const f = dx * hx + dy * hy, lat = -dx * hy + dy * hx;
+    return Math.cos(c.heading - p.heading) > 0.7 && f > -12 && f < 25 && lat < -1.2;
+  });
 }
 
 function checkRules(p, dt) {
   const t = game.time;
   const mph = Math.max(0, p.speed) * MPH;
   const ch = Math.cos(p.heading), sh = Math.sin(p.heading);
-  const fx = p.x + ch * p.len / 2, fy = p.y + sh * p.len / 2;   // front bumper
-
-  // Indicator memory: remember the last direction used and when.
   if (p.ind) { p.lastIndDir = p.ind; p.lastIndT = t; }
-  // Self-cancel after the steering returns, like a real indicator stalk.
-  if (p.ind && Math.abs(angDiff(p.heading, p.indHeading)) > 1.0 && Math.abs(p.steer) < 0.15) p.ind = 0;
+  if (p.ind && Math.abs(angDiff(p.heading, p.indHeading)) > 1.0 && Math.abs(p.steer) < 0.15) p.ind = 0;   // self-cancel
 
-  // ---- Street rules
-  const eh = edgeAtPoint(p.x, p.y);
-  if (eh) {
-    const e = eh.edge;
-    if (p.lastEdge && p.lastEdge !== e && p.lastEdge.limit !== e.limit)
-      game.tip(e.limit === 60 ? 'National speed limit: 60 mph on this single carriageway' : `Speed limit now ${e.limit} mph`, 'limit', 0);
-    if (!p.lastEdge || p.lastEdge.limit !== e.limit) p.limit = e.limit;
-    p.lastEdge = e;
-    // Keep left.
-    const axis = DIRS[e.dir];
-    const along = ch * axis[0] + sh * axis[1];
-    if (Math.abs(along) > 0.6 && Math.abs(p.speed) > 2 && p.speed > 0) {
-      const d = along > 0 ? axis : [-axis[0], -axis[1]];
-      const l = leftOf(d);
-      const want = e.dir === 0 ? l[1] : l[0];      // which sign of `lat` is our left lane
-      if (eh.lat * want < -0.4) p.wrongSide += dt; else p.wrongSide = Math.max(0, p.wrongSide - dt * 2);
-    } else p.wrongSide = Math.max(0, p.wrongSide - dt * 2);
-    if (p.wrongSide > 3 && !p.wrongSideFault) {
-      p.wrongSideFault = true;
-      fault('side', 'serious', 'Positioning', 'Drove on the right-hand side of the road',
-        'In the UK keep LEFT. The centre line should be on your right, next to you as the driver (Rule 160).', 'keepleft', 1);
-    }
-    if (p.wrongSide === 0) p.wrongSideFault = false;
-    // Zebra crossings.
-    if (e.zebra) {
-      const z = e.zebra;
-      const dz = Math.hypot(z.x - p.x, z.y - p.y);
-      const ahead = (z.x - p.x) * ch + (z.y - p.y) * sh;
-      if (dz < 45 && ahead > 15 && p.speed > 3) game.tip('Zebra crossing ahead: give way once someone steps on (Rule 195)', 'zebra' + z.edge.id);
-      if (zebraOccupied(z) && traffic.peds.some(pd => pd.zebra === z && pd.onRoad)) {
-        for (const m of bodyCircles(p)) {
-          const da = z.horiz ? Math.abs(m[0] - z.x) : Math.abs(m[1] - z.y);
-          if (da < 2.2 && dz < 8) {
-            fault('zebra', 'serious', 'Pedestrian crossings', 'Did not give way to a pedestrian on a zebra crossing',
-              'You MUST give way when someone has moved onto a zebra crossing (Rule 195).', 'crossing', 6);
-            break;
-          }
-        }
-      }
-    }
-    // Junction ahead coaching.
-    const to = along > 0 ? e.b : e.a;
-    const dist = Math.hypot(to.x - p.x, to.y - p.y) - to.r;
-    if (dist < 50 && dist > 20 && Math.abs(along) > 0.8 && p.speed > 3) {
-      if (to.type === 'rb') game.tip('Roundabout: give way to traffic from the RIGHT, then go clockwise. Signal left for the 1st exit, right for past 12 o\'clock.', 'rb' + to.i + to.j);
-      else if (to.type === 'lights') game.tip('Traffic lights ahead. UK sequence: red → red + amber → green → amber → red.', 'tl' + to.i + to.j);
-      else if (to.type === 'give') {
-        const arm = along > 0 ? (e.dir + 2) % 4 : e.dir;
-        if (arm % 2 !== to.major) game.tip('Give way: traffic on the main road has priority. Look RIGHT first, then left, then right again.', 'gw' + to.i + to.j);
-      }
-    }
-  }
-  // Speeding.
+  const node = nodeAt(p.x + ch * 2, p.y + sh * 2) || nodeAt(p.x, p.y);
+  const q = node ? null : roadAt(p.x, p.y);
+  if (q && q.dist <= q.e.W / 2 + 0.5) onRoad(p, q, dt, mph);
+  else { p.wrongSide = Math.max(0, p.wrongSide - dt * 2); p.lastQ = null; }
+
+  // Speed.
   const limit = p.limit || 30;
   if (mph > limit + 3) p.overLimit += dt; else p.overLimit = 0;
   if (mph > limit + 10 && p.overLimit > 1) fault('speed2', 'serious', 'Speed', `${Math.round(mph)} mph in a ${limit} mph limit`,
-    `Speed limits are maximums. ${limit === 60 ? 'National limit for cars on single carriageways is 60 mph.' : 'In towns 30 mph is the norm, 20 mph near schools.'} (Rule 124)`, 'speed', 15);
-  else if (p.overLimit > 2.5) fault('speed', 'minor', 'Speed', `Exceeded the ${limit} mph limit`, 'Check your speedometer, it reads in mph. Watch for the red-ringed limit signs.', 'speed', 12);
+    `Speed limits are maximums. ${limit >= 60 ? 'National limit for cars: 60 mph on single carriageways, 70 mph on dual carriageways.' : limit === 20 ? '20 mph zones are common near schools and in city centres.' : 'In towns 30 mph is the norm.'} (Rule 124)`, 'speed', 15);
+  else if (p.overLimit > 2.5) fault('speed', 'minor', 'Speed', `Exceeded the ${limit} mph limit`, 'Check your speedometer: it reads in mph. Press L for the speed limiter.', 'speed', 12);
 
-  // Surface.
   const surf = surfaceAt(p.x, p.y);
   if (surf === 'pavement' && Math.abs(p.speed) > 1) fault('kerb', 'serious', 'Control', 'Drove on the pavement', 'Pavements are for pedestrians. Mounting the kerb is a serious fault.', 'safety', 6);
   if (surf === 'grass' && Math.abs(p.speed) > 2) fault('grass', 'minor', 'Control', 'Left the road', 'Keep to your lane and steer smoothly.', 'keepleft', 8);
 
-  // ---- Junctions
-  const n = nodeAtPoint(fx, fy) || nodeAtPoint(p.x, p.y);
-  if (n && n !== p.node) enterNode(p, n, t);
-  if (!n && p.node) exitNode(p, p.node);
-  if (n && n.type === 'rb') {
-    const a = Math.atan2(p.y - n.y, p.x - n.x);
-    p.rbTurned += angDiff(a, p.rbAngle);
-    p.rbAngle = a;
-    if (p.rbTurned < -0.6) fault('rbwrong', 'dangerous', 'Roundabouts', 'Went the wrong way round a roundabout',
-      'UK roundabouts go CLOCKWISE: turn left onto them (Rule 185).', 'roundabout', 10);
+  // Junctions.
+  if (node && node !== p.node) enterNode(p, node, t);
+  if (!node && p.node) exitNode(p, p.node);
+  if (node) inNode(p, node, dt);
+  p.node = node;
+}
+
+function onRoad(p, q, dt, mph) {
+  const e = q.e, along = Math.cos(p.heading - q.ang);
+  const dir = along > 0 ? 1 : -1;
+  if (e !== p.lastEdge) {
+    if (p.lastEdge && p.lastEdge.limit !== e.limit)
+      game.tip(e.limit >= 60 ? `National speed limit: ${e.kind === 'dual' ? '70 mph on this dual carriageway' : '60 mph on this single carriageway'}` : `Speed limit now ${e.limit} mph`, 'limit', 0);
+    p.limit = e.limit;
+    if (lanesOf(e, dir) && (dir > 0 ? e.busF : e.busB)) game.tip('Bus lane on the left (red surface). Stay out of it during its hours of operation (Rule 141).', 'bus' + e.id, 60);
+    if (e.lanesB === 0 && lanesOf(e, dir)) game.tip('One-way street. You may use either lane; pick the right-hand lane early if you will turn right.', 'oneway' + e.id, 90);
+    if (e.kind === 'single') game.tip('Single-track road: no centre line. Slow down for bends and pull into a passing place on your LEFT, or wait opposite one on your right (Rule 155).', 'single', 120);
+    if (e.kind === 'dual') game.tip('Dual carriageway, 70 mph. Keep to the left lane; use the right lane only to overtake (Rule 137).', 'dual', 120);
+    p.lastEdge = e;
   }
-  p.node = n;
+  game.where = { road: e.name, district: e.district, kind: e.kind };
+  if (Math.abs(along) < 0.6 || p.speed < 1.5) { p.wrongSide = Math.max(0, p.wrongSide - dt * 2); p.lastQ = { e, s: q.s }; return; }
+
+  if (lanesOf(e, dir) === 0) fault('oneway', 'dangerous', 'Response to signs', 'Drove the wrong way along a one-way street',
+    'Look for the blue one-way arrows and the red-and-white No Entry signs.', 'signs', 15);
+
+  // Keep left.
+  const side = (q.lat - e.div) * dir;
+  const tol = e.kind === 'single' ? -1.0 : -0.4;
+  if (lanesOf(e, dir) && lanesOf(e, -dir) && side < tol && !passingSomething(p, q, dir)) p.wrongSide += dt;
+  else p.wrongSide = Math.max(0, p.wrongSide - dt * 2);
+  if (p.wrongSide > 3 && !p.wrongSideFault) {
+    p.wrongSideFault = true;
+    fault('side', 'serious', 'Positioning', 'Drove on the right-hand side of the road', 'In the UK keep LEFT. The centre line should be on your right, next to you as the driver (Rule 160).', 'keepleft', 1);
+  }
+  if (p.wrongSide === 0) p.wrongSideFault = false;
+
+  const lane = laneIndex(e, dir, q.lat);
+  // Dual carriageway: don't sit in the overtaking lane.
+  if (e.kind === 'dual' && lane >= 1 && !passingSomething(p, q, dir)) p.hogT += dt; else p.hogT = Math.max(0, p.hogT - dt);
+  if (p.hogT > 15) fault('hog', 'minor', 'Positioning', 'Stayed in the overtaking lane', 'On dual carriageways keep to the left lane unless overtaking (Rules 137, 264).', 'keepleft', 30);
+  // Bus lane.
+  const endDist = dir > 0 ? e.len - e.b.r - q.s : q.s - e.a.r;
+  if (isBusLane(e, dir, lane) && lanesOf(e, dir) > 1 && endDist > 25) p.busT += dt; else p.busT = 0;
+  if (p.busT > 2.5) fault('bus', 'minor', 'Road markings', 'Drove in a bus lane', 'Bus lanes are marked with a solid white line and BUS LANE on a red surface. Check the times on the blue sign (Rule 141).', 'signs', 20);
+  // Passing an obstruction on your side: oncoming traffic has priority.
+  for (const [lo, hi] of e.obst[dir] || []) {
+    const inZone = dir > 0 ? q.s > lo - 6 && q.s < hi : q.s < hi + 6 && q.s > lo;
+    if (!inZone || side > e.laneW * 0.55) continue;
+    const oncoming = traffic.cars.some(c => Math.cos(c.heading - p.heading) < -0.5 && c.speed > 1.5 && Math.hypot(c.x - p.x, c.y - p.y) < 30 &&
+      (c.x - p.x) * Math.cos(p.heading) + (c.y - p.y) * Math.sin(p.heading) > 0);
+    if (oncoming) fault('obst', 'serious', 'Meeting traffic', 'Did not give way to oncoming traffic at an obstruction',
+      'If the obstruction (parked cars, a pinch point) is on your side, oncoming traffic goes first (Rule 163).', 'junction', 10);
+  }
+  // Speed humps.
+  for (const h of e.humps) if (Math.abs(q.s - h) < 1.2 && mph > 18) {
+    game.shake = Math.max(game.shake, 0.5);
+    fault('hump', 'minor', 'Speed', 'Too fast over a speed hump', 'Slow to about 15 mph for humps. They are there because children and pedestrians are about.', 'speed', 4);
+  }
+  // Crossings and level crossings: detect crossing the stop point since the last frame.
+  const prev = p.lastQ && p.lastQ.e === e ? p.lastQ.s : null;
+  const crossed = (s) => prev !== null && (prev - s) * dir < 0 && (q.s - s) * dir >= 0;
+  for (const c of world.crossings) {
+    if (c.e !== e) continue;
+    const ahead = (c.s - q.s) * dir;
+    if (ahead > 15 && ahead < 55 && mph > 5) game.tip(c.kind === 'zebra' ? 'Zebra crossing ahead: give way once someone steps on (Rule 195).' : 'Pedestrian crossing with lights ahead. Red means stop, even if nobody is crossing yet (Rule 196).', 'cx' + c.id, 60);
+    if (c.kind === 'puffin' && crossed(c.s - dir * 3.5)) { const st = puffinState(c, game.time); if (st === 'R' || st === 'RA') fault('puffin', 'serious', 'Pedestrian crossings', 'Went through a red light at a pedestrian crossing', 'Stop at the white line when the light is red (Rules 176, 196).', 'crossing', 6); }
+    if (crossingBusy(c) && Math.abs(q.s - c.s) < 2.4 + p.len / 2) fault('zebra', 'serious', 'Pedestrian crossings', `Did not give way to a pedestrian on a ${c.kind === 'zebra' ? 'zebra' : 'pedestrian'} crossing`,
+      'You MUST give way once someone has moved onto a crossing (Rule 195).', 'crossing', 6);
+  }
+  for (const lx of world.levelX) {
+    if (lx.e !== e) continue;
+    const ahead = (lx.s - q.s) * dir;
+    if (ahead > 20 && ahead < 90 && mph > 5) game.tip('Level crossing ahead. Amber then flashing red lights mean STOP, and keep waiting while they flash (Rule 293).', 'lx' + lx.id, 60);
+    if (crossed(lx.s - dir * 7) && lx.state !== 'open') fault('lx', 'dangerous', 'Level crossings', 'Crossed a level crossing while the lights were showing',
+      'Amber then flashing red means a train is coming. Stop at the white line (Rule 293).', 'general', 10);
+  }
+  // Coaching for the junction ahead.
+  const to = dir > 0 ? e.b : e.a;
+  const dist = Math.hypot(to.x - p.x, to.y - p.y) - to.r;
+  if (dist < 55 && dist > 18 && mph > 6) junctionTip(to, e);
+  if (to.asl && dist < 6 && dist > 0.5 && Math.abs(p.speed) < 0.2) {
+    const arm = to.arms.find(a => a.e === e);
+    if (arm && lightState(to, arm, game.time) !== 'G') fault('asl', 'minor', 'Response to signals', 'Stopped in the cyclists\' box', 'At red, stop at the FIRST white line. The box beyond it is for cyclists (Rule 178).', 'lights', 30);
+  }
+  if (dist < 25) p.approachMin = Math.min(p.approachMin, Math.abs(p.speed)); else p.approachMin = 99;
+  p.lastLane = lane; p.lastLaneCount = lanesOf(e, dir);
+  p.lastQ = { e, s: q.s };
+}
+
+function junctionTip(n, e) {
+  const k = 'j' + n.id;
+  const arm = n.arms.find(a => a.e === e);
+  if (n.type === 'rb' && n.signals) game.tip('Traffic lights on the roundabout entry. Go on green, then give way on the roundabout as normal.', k);
+  else if (n.type === 'rb' && n.ringLanes > 1) game.tip('Two-lane roundabout: LEFT lane for the first exit or straight on, RIGHT lane for exits past 12 o\'clock. Follow the lane arrows (Rule 186).', k);
+  else if (n.type === 'rb') game.tip('Roundabout: give way to traffic from the RIGHT, then go clockwise. Signal left for the first exit, right for exits past 12 o\'clock.', k);
+  else if (n.type === 'mini') game.tip(n.arms.some(a => (a.e.a.type === 'mini' && a.e.a !== n) || (a.e.b.type === 'mini' && a.e.b !== n)) ? 'Double mini-roundabout: treat each one separately and give way to the right at both (Rule 189).' : 'Mini-roundabout: give way to the right and go round the white circle, not over it (Rule 188).', k);
+  else if (n.type === 'lights' && n.box) game.tip('Box junction (yellow criss-cross): do not enter unless your exit is clear (Rule 174).', k);
+  else if (n.type === 'lights') game.tip('Traffic lights ahead. Turning right? Give way to oncoming traffic even on green (Rule 176).', k);
+  else if (n.type === 'stop' && arm && !arm.major) game.tip('STOP sign: you must stop completely at the line, even if the road is clear (Rule 171).', k);
+  else if (n.type === 'unmarked') game.tip('Unmarked crossroads: nobody has priority. Slow down and look both ways (Rule 146).', k);
+  else if (n.gap && arm && !arm.major) game.tip('Crossing a dual carriageway: treat each half separately. Only wait in the gap if your car fits in it (Rule 173).', k);
+  else if (n.type === 'give' && arm && !arm.major) game.tip('Give way: traffic on the main road has priority. Look RIGHT, LEFT, then RIGHT again before you pull out.', k);
+  else if (n.type === 'give' && arm && arm.major) game.tip('Junction ahead. Turning right? Wait just left of the centre line for a gap in oncoming traffic.', k, 120);
 }
 
 function armFromPoint(n, x, y) {
   const a = Math.atan2(y - n.y, x - n.x);
-  let best = 0, bd = 9;
-  for (const arm of n.arms) { const d = Math.abs(angDiff(a, armAngle(arm))); if (d < bd) { bd = d; best = arm; } }
-  return best;
+  return n.arms.reduce((b, arm) => !b || Math.abs(angDiff(a, arm.ang)) < Math.abs(angDiff(a, b.ang)) ? arm : b, null);
 }
+const sinceInd = (p, t) => p.ind || (t - p.lastIndT < 2.5 ? p.lastIndDir : 0);
 
 function enterNode(p, n, t) {
-  const arm = armFromPoint(n, p.x, p.y);
-  const recentInd = p.ind || (t - p.lastIndT < 2 ? p.lastIndDir : 0);
-  p.nodeEntry = { node: n, arm, heading: p.heading, ind: recentInd, t };
-  p.rbAngle = Math.atan2(p.y - n.y, p.x - n.x); p.rbTurned = 0;
-  if (n.type === 'lights') {
-    const st = lightState(n, arm % 2, t);
-    if (st === 'R' || st === 'RA') fault('red', 'serious', 'Traffic lights', 'Drove through a red light',
-      'You MUST stop behind the white line unless the light is green. Red + amber still means stop (Rule 176).', 'lights', 5);
+  const arm = armFromPoint(n, p.x - Math.cos(p.heading) * 3, p.y - Math.sin(p.heading) * 3);
+  const opp = oppositeArm(n, arm);
+  const oncoming = !!opp && traffic.cars.some(c => approaching(c, n, 35, opp) && c.speed > 4);
+  p.nodeEntry = { node: n, arm, heading: p.heading, ind: sinceInd(p, t), t, lane: p.lastLane || 0, lanes: p.lastLaneCount || 1, oncoming };
+  p.rbAngle = Math.atan2(p.y - n.y, p.x - n.x); p.rbTurned = 0; p.boxT = 0;
+  if (p.speed < 1) return;
+  if ((n.type === 'lights' || n.signals) && arm) {
+    const st = lightState(n, arm, t);
+    if (st === 'R' || st === 'RA') fault('red', 'serious', 'Response to signals', 'Drove through a red light', 'You MUST stop behind the white line unless the light is green. Red + amber still means stop (Rule 176).', 'lights', 5);
   }
-  if (n.type === 'rb' && p.speed > 1) {
-    const entry = rbEntryAngle(arm);
+  if (n.type === 'rb') {
+    const entry = Math.atan2(p.y - n.y, p.x - n.x);
     const conflict = traffic.cars.some(c => {
       const r = Math.hypot(c.x - n.x, c.y - n.y);
-      if (r > RB_OUT + 0.5 || c.speed < 1.5) return false;
+      if (r > n.r || c.speed < 2 || Math.hypot(c.x - p.x, c.y - p.y) > 16) return false;
       const rel = angDiff(entry, Math.atan2(c.y - n.y, c.x - n.x));
-      return rel > 0 && rel < 1.4;
+      return rel > 0 && rel < 1.3;
     });
-    if (conflict) fault('rbgive', 'serious', 'Roundabouts', 'Did not give way to traffic from the right at a roundabout',
-      'At roundabouts give priority to traffic coming from your RIGHT (Rule 185).', 'roundabout', 6);
+    if (conflict) fault('rbgive', 'serious', 'Junctions', 'Did not give way to traffic from the right at a roundabout', 'At roundabouts give priority to traffic coming from your RIGHT (Rule 185).', 'roundabout', 6);
   }
-  if (n.type === 'give' && arm % 2 !== n.major && p.speed > 1) {
-    const conflict = traffic.cars.some(c => {
-      const dx = n.x - c.x, dy = n.y - c.y, r = Math.hypot(dx, dy);
-      if (r > 24 || c.speed < 3) return false;
-      return (Math.cos(c.heading) * dx + Math.sin(c.heading) * dy) / r > 0.7;
-    });
-    if (conflict) fault('give', 'serious', 'Junctions', 'Pulled out without giving way to traffic on the main road',
-      'At give-way lines, traffic on the major road has priority. Look right, left, right (Rule 172).', 'junction', 6);
+  if (n.type === 'mini' && traffic.cars.some(c => c.speed > 2 && inBox(c, n, 0) && Math.hypot(c.x - p.x, c.y - p.y) < 10))
+    fault('minigive', 'serious', 'Junctions', 'Did not give way at a mini-roundabout', 'Mini-roundabouts work like big ones: give way to traffic from the right (Rule 188).', 'roundabout', 6);
+  if ((n.type === 'give' || n.type === 'stop') && arm && !arm.major) {
+    if (n.type === 'stop' && p.approachMin > 0.4) fault('stop', 'serious', 'Response to signs', 'Did not stop at a STOP sign', 'At a STOP sign you must stop completely at the solid white line (Rule 171).', 'junction', 6);
+    const conflict = n.arms.some(a => a.major && traffic.cars.some(c => approaching(c, n, 32, a) && c.speed > 3));
+    if (conflict) fault('give', 'serious', 'Junctions', 'Pulled out without giving way to traffic on the main road', 'Observation at junctions is the top reason for failing the test. Look right, left, right (Rule 172).', 'junction', 6);
   }
+  if (n.type === 'unmarked' && traffic.cars.some(c => c.speed > 3 && n.arms.some(a => a !== arm && approaching(c, n, 18, a))))
+    fault('unmarked', 'minor', 'Junctions', 'Went into an unmarked crossroads as another car arrived', 'Nobody has priority at an unmarked crossroads. Slow down and be ready to stop (Rule 146).', 'junction', 8);
+}
+
+function inNode(p, n, dt) {
+  if (n.type === 'rb' || n.type === 'mini') {
+    const a = Math.atan2(p.y - n.y, p.x - n.x);
+    p.rbTurned += angDiff(a, p.rbAngle); p.rbAngle = a;
+    if (p.rbTurned < -0.6) fault('rbwrong', 'dangerous', 'Roundabouts', 'Went the wrong way round a roundabout', 'UK roundabouts go CLOCKWISE: turn left onto them (Rule 185).', 'roundabout', 10);
+    if (n.type === 'mini' && Math.hypot(p.x - n.x, p.y - n.y) < n.islandR && Math.abs(p.speed) > 1)
+      fault('minicentre', 'minor', 'Roundabouts', 'Drove over the mini-roundabout marking', 'Go round the white circle. Only large vehicles that cannot avoid it may drive over it (Rule 188).', 'roundabout', 10);
+  }
+  if (n.box && Math.abs(p.speed) < 0.3) { p.boxT += dt; if (p.boxT > 1.5) fault('box', 'minor', 'Junctions', 'Stopped in a yellow box junction', 'Do not enter the box unless your exit is clear (Rule 174).', 'junction', 20); }
 }
 
 function exitNode(p, n) {
   const en = p.nodeEntry;
   p.nodeEntry = null;
-  if (!en || en.node !== n) return;
-  let turn;
-  if (n.type === 'rb') {
-    const exArm = armFromPoint(n, p.x, p.y);
-    turn = (exArm - (en.arm + 2) + 8) % 4;            // 0 ahead, 1 right, 2 back, 3 left
-    if (p.rbTurned < 0.3) return;                       // clipped the edge, not a real pass
-    if (turn === 3 && en.ind !== -1) fault('sig', 'minor', 'Signals', 'No left signal for the first exit at a roundabout',
-      'Taking the first exit: signal left on approach and keep left (Rule 186).', 'roundabout', 4);
-    if (turn === 1 && en.ind !== 1) fault('sig', 'minor', 'Signals', 'No right signal when turning right at a roundabout',
-      'Going right: signal right on approach, then left after the exit before yours (Rule 186).', 'roundabout', 4);
+  if (!en || en.node !== n || !en.arm) return;
+  const exArm = armFromPoint(n, p.x, p.y);
+  if (n.type === 'rb' || n.type === 'mini') {
+    if (p.rbTurned < 0.3 || !exArm) return;
+    const sw = rbSweep(en.arm, exArm);
+    if (sw < 2.2 && en.ind !== -1) fault('sig', 'minor', 'Signals', 'No left signal for the first exit at a roundabout', 'Taking the first exit: signal left on approach and keep left (Rule 186).', 'roundabout', 4);
+    if (sw > 3.7 && en.ind !== 1) fault('sig', 'minor', 'Signals', 'No right signal when turning right at a roundabout', 'Going right: signal right on approach, then left after the exit before yours (Rule 186).', 'roundabout', 4);
+    if (en.lanes > 1 && en.lane >= 1 && sw < 2.2) fault('rblane', 'minor', 'Roundabouts', 'Used the right-hand lane to take the first exit', 'For the first exit, approach in the LEFT lane (Rule 186).', 'roundabout', 6);
+    if (en.lanes > 1 && en.lane === 0 && sw > 3.9) fault('rblane', 'minor', 'Roundabouts', 'Used the left lane to turn right at a roundabout', 'For exits past 12 o\'clock, approach in the RIGHT lane (Rule 186).', 'roundabout', 6);
     return;
   }
+  if (n.type === 'bend' || n.type === 'gateway') return;
   const d = angDiff(p.heading, en.heading);
-  turn = d > 0.9 ? 1 : d < -0.9 ? 3 : 0;
-  if (n.type === 'bend') return;
-  if (turn === 1 && en.ind !== 1) fault('sig', 'minor', 'Signals', 'Turned right without signalling', 'Mirrors, Signal, Manoeuvre. Signal in good time (Rule 103).', 'signals', 4);
-  if (turn === 3 && en.ind !== -1) fault('sig', 'minor', 'Signals', 'Turned left without signalling', 'Mirrors, Signal, Manoeuvre. Signal in good time (Rule 103).', 'signals', 4);
+  const turn = d > 0.9 ? 1 : d < -0.9 ? -1 : 0;
+  if (turn === 1 && en.ind !== 1) fault('sig', 'minor', 'Signals', 'Turned right without signalling', SIG_TIP, 'signals', 4);
+  if (turn === -1 && en.ind !== -1) fault('sig', 'minor', 'Signals', 'Turned left without signalling', SIG_TIP, 'signals', 4);
   if (turn === 0 && en.ind !== 0 && p.ind) fault('sigm', 'minor', 'Signals', 'Misleading signal: indicated but went straight on', 'Cancel signals you no longer need (Rule 103).', 'signals', 4);
-  if (turn === 1) game.tip('Big right turn done. Now make sure you are in the LEFT lane.', 'afterright', 0);
+  if (turn === 1 && en.oncoming && (en.arm.major || n.type === 'lights'))
+    fault('rightturn', 'serious', 'Junctions', 'Turned right across oncoming traffic', 'Turning right is where most test fails happen. Wait for a safe gap in oncoming traffic (Rule 180).', 'junction', 6);
+  if (turn === 1) game.tip('Big right turn done. Make sure you are in the LEFT lane of the new road.', 'afterright', 30);
 }
 
-// Top-down renderer. Signs and signal heads are drawn upright on screen so they stay readable
-// when the camera turns with the car.
+// Renderer, part 1: the static world. Geometry is turned into Path2D objects once, then stroked each frame.
 const COL = {
-  grass: '#7da35a', garden: '#8fb46a', pave: '#c9c6bd', kerb: '#e9e6dc', road: '#45484d', ring: '#4d5055',
-  line: '#f4f4ef', yellow: '#f2c230', hedge: '#4d6e33', water: '#5d8fb5', island: '#6f9a4f',
+  grass: '#7da35a', lawn: '#8fb46a', city: '#b3afa5', village: '#88ad62', pave: '#c9c6bd', kerb: '#e9e6dc',
+  road: '#45484d', rural: '#4f5257', dual: '#4a4d52', line: '#f4f4ef', yellow: '#f2c230', hedge: '#4d6e33',
+  water: '#5d8fb5', island: '#6f9a4f', bus: '#9c3b34', asl: '#3f8f4f',
 };
 const skids = [];
+const R2D = { edges: [], nodes: [] };
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
+function offsetPath(e, lat, s0, s1, step = 4) {
+  const p = new Path2D();
+  if (s1 <= s0) return p;
+  let first = true;
+  for (let s = s0; ; s = Math.min(s1, s + step)) {
+    const q = pointAt(e, s, typeof lat === 'function' ? lat(s) : lat);
+    first ? p.moveTo(q.x, q.y) : p.lineTo(q.x, q.y); first = false;
+    if (s >= s1) break;
+  }
+  return p;
+}
+function zigzag(e, lat, s0, s1) {
+  const p = new Path2D();
+  let k = 0;
+  for (let s = s0; s <= s1; s += 1, k++) { const q = pointAt(e, s, lat + (k % 2 ? 0.3 : -0.3)); k ? p.lineTo(q.x, q.y) : p.moveTo(q.x, q.y); }
+  return p;
+}
 
-function drawWorld(ctx, cam, time, view) {
-  const vis = (x0, y0, x1, y1) => x1 > view.x0 && x0 < view.x1 && y1 > view.y0 && y0 < view.y1;
-  // Countryside.
-  for (const f of world.fields) {
-    if (!vis(f.x0 - 3, f.y0 - 3, f.x1 + 3, f.y1 + 3)) continue;
-    ctx.fillStyle = COL.hedge; ctx.fillRect(f.x0 - 2.5, f.y0 - 2.5, f.x1 - f.x0 + 5, f.y1 - f.y0 + 5);
-    ctx.fillStyle = f.color; ctx.fillRect(f.x0, f.y0, f.x1 - f.x0, f.y1 - f.y0);
-    if (f.rows) { ctx.strokeStyle = 'rgba(60,70,20,.18)'; ctx.lineWidth = 0.8; ctx.beginPath();
-      for (let x = f.x0 + 3; x < f.x1; x += 4) { ctx.moveTo(x, f.y0); ctx.lineTo(x, f.y1); } ctx.stroke(); }
-  }
-  // Town blocks: pavement ring with a kerb, gardens inside.
-  for (const b of world.blocks) {
-    if (!b.town || !vis(b.x0, b.y0, b.x1, b.y1)) continue;
-    ctx.fillStyle = COL.kerb; ctx.fillRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
-    ctx.fillStyle = COL.pave; ctx.fillRect(b.x0 + 0.3, b.y0 + 0.3, b.x1 - b.x0 - 0.6, b.y1 - b.y0 - 0.6);
-    ctx.fillStyle = b.kind === 'park' ? '#86b35e' : COL.garden;
-    ctx.fillRect(b.x0 + PAVE, b.y0 + PAVE, b.x1 - b.x0 - 2 * PAVE, b.y1 - b.y0 - 2 * PAVE);
-    if (b.pond) { ctx.fillStyle = COL.water; ctx.beginPath(); ctx.ellipse(b.pond.x, b.pond.y, b.pond.rx, b.pond.ry, 0, 0, 7); ctx.fill();
-      ctx.strokeStyle = '#d8cfb0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(b.pond.x, b.pond.y, b.pond.rx + 5, b.pond.ry + 5, 0, 0, 7); ctx.stroke(); }
-    if (b.pitch) { const p = b.pitch; ctx.fillStyle = '#6aa84f'; ctx.fillRect(p.x, p.y, p.w, p.h); ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.3;
-      ctx.strokeRect(p.x + 2, p.y + 2, p.w - 4, p.h - 4); ctx.beginPath(); ctx.moveTo(p.x + p.w / 2, p.y + 2); ctx.lineTo(p.x + p.w / 2, p.y + p.h - 2); ctx.stroke(); }
-  }
-  // Carriageways.
+function prepareRender() {
   for (const e of world.edges) {
-    const x0 = Math.min(e.a.x, e.b.x) - W / 2, y0 = Math.min(e.a.y, e.b.y) - W / 2, x1 = Math.max(e.a.x, e.b.x) + W / 2, y1 = Math.max(e.a.y, e.b.y) + W / 2;
-    if (!vis(x0, y0, x1, y1)) continue;
-    ctx.fillStyle = e.ring ? COL.ring : COL.road; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    const r = { e, marks: [], texts: [], arrows: [] };
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [x, y] of e.pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    const m = e.W / 2 + PAVE + 6;
+    r.bbox = [x0 - m, y0 - m, x1 + m, y1 + m];
+    r.centre = offsetPath(e, 0, 0, e.len);
+    const s0 = e.a.r + 1.5, s1 = e.len - e.b.r - 1.5;
+    const cxs = world.crossings.filter(c => c.e === e);
+    const gaps = cxs.map(c => [c.s - 3, c.s + 3]).concat(world.levelX.filter(l => l.e === e).map(l => [l.s - 8, l.s + 8]));
+    const segs = (a, b) => {                       // [a,b] minus crossings
+      let out = [[a, b]];
+      for (const [g0, g1] of gaps) out = out.flatMap(([u, v]) => g1 < u || g0 > v ? [[u, v]] : [[u, g0], [g1, v]].filter(([p, q]) => q - p > 1));
+      return out;
+    };
+    const add = (lat, dash, width = 0.15, color = COL.line, a = s0, b = s1) => { for (const [u, v] of segs(a, b)) r.marks.push({ p: offsetPath(e, lat, u, v), dash, width, color }); };
+    if (e.kind !== 'single') {
+      if (e.median) { add(e.div + e.median / 2 + 0.2, null); add(e.div - e.median / 2 - 0.2, null); }
+      else if (e.lanesF && e.lanesB) {
+        // Centre line: long "hazard" dashes near junctions, short dashes elsewhere.
+        const near = 30, hz = [6, 2], norm = e.kind === 'rural' ? [4, 8] : [3, 6];
+        add(e.div, hz, 0.16, COL.line, s0, Math.min(s1, s0 + near));
+        if (s1 - s0 > 2 * near) add(e.div, norm, 0.15, COL.line, s0 + near, s1 - near);
+        add(e.div, hz, 0.16, COL.line, Math.max(s0, s1 - near), s1);
+      }
+      for (const dir of [1, -1]) for (let i = 0; i < lanesOf(e, dir) - 1; i++) {
+        const lat = (laneLat(e, dir, i) + laneLat(e, dir, i + 1)) / 2;
+        add(lat, isBusLane(e, dir, i) ? null : [3, 6], isBusLane(e, dir, i) ? 0.3 : 0.15);
+      }
+      if (e.kind === 'rural' || e.kind === 'dual' || e.kind === 'link') { add(e.W / 2 - 0.35, null, 0.12); add(-e.W / 2 + 0.35, null, 0.12); }
+    }
+    // Bus lanes: red surface and words.
+    for (const dir of [1, -1]) if (lanesOf(e, dir) > 1 && isBusLane(e, dir, 0)) {
+      r.bus = r.bus || [];
+      r.bus.push(offsetPath(e, laneLat(e, dir, 0), s0 + 6, s1 - 18));
+      for (let s = s0 + 20; s < s1 - 30; s += 55) { const q = pointAt(e, dir > 0 ? s : e.len - s, laneLat(e, dir, 0)); r.texts.push({ x: q.x, y: q.y, ang: (dir > 0 ? q.ang : q.ang + Math.PI) + Math.PI / 2, text: 'BUS LANE' }); }
+    }
+    // Zigzags and give-way dashes at crossings.
+    for (const c of cxs) {
+      for (const sg of [-1, 1]) {
+        for (const lat of [-e.W / 2 + 0.5, e.div, e.W / 2 - 0.5]) r.marks.push({ p: zigzag(e, lat, Math.min(c.s + sg * 3.6, c.s + sg * 14), Math.max(c.s + sg * 3.6, c.s + sg * 14)), dash: null, width: 0.15, color: COL.line });
+        const a = pointAt(e, c.s + sg * 2.6, -e.W / 2), b = pointAt(e, c.s + sg * 2.6, e.W / 2);
+        const p = new Path2D(); p.moveTo(a.x, a.y); p.lineTo(b.x, b.y);
+        r.marks.push({ p, dash: c.kind === 'zebra' ? [0.6, 0.4] : null, width: c.kind === 'zebra' ? 0.2 : 0.3, color: COL.line });
+      }
+    }
+    // Lane arrows before multi-lane junctions.
+    for (const dir of [1, -1]) {
+      const L = lanesOf(e, dir), to = dir > 0 ? e.b : e.a;
+      if (L < 2 || to.type === 'bend' || to.type === 'gateway') continue;
+      const s = dir > 0 ? e.len - to.r - 14 : to.r + 14;
+      if ((dir > 0 ? s - e.a.r : e.len - e.b.r - s) < 20) continue;
+      for (let i = 0; i < L; i++) {
+        if (isBusLane(e, dir, i)) continue;
+        const q = pointAt(e, s, laneLat(e, dir, i));
+        const kind = i === 0 ? 'leftAhead' : i === L - 1 ? (to.type === 'rb' ? 'right' : 'aheadRight') : 'ahead';
+        r.arrows.push({ x: q.x, y: q.y, ang: dir > 0 ? q.ang : q.ang + Math.PI, kind });
+      }
+    }
+    if (e.hedge) r.hedge = [offsetPath(e, e.W / 2 + 1.6, 0, e.len, 6), offsetPath(e, -e.W / 2 - 1.6, 0, e.len, 6)];
+    r.humps = e.humps.map(s => ({ s, q: pointAt(e, s) }));
+    R2D.edges.push(r);
   }
-  for (const n of world.nodes) if (n.type === 'rb' && vis(n.x - 20, n.y - 20, n.x + 20, n.y + 20)) {
-    ctx.fillStyle = COL.kerb; ctx.beginPath(); ctx.arc(n.x, n.y, RB_OUT + 1.2, 0, 7); ctx.fill();
-    ctx.fillStyle = COL.road; ctx.beginPath(); ctx.arc(n.x, n.y, RB_OUT, 0, 7); ctx.fill();
-    for (const arm of n.arms) { const d = DIRS[arm]; ctx.fillRect(n.x + d[0] * 10 - (d[1] ? W / 2 : 0), n.y + d[1] * 10 - (d[0] ? W / 2 : 0), d[0] ? d[0] * 10 : W, d[1] ? d[1] * 10 : W); }
+  for (const n of world.nodes) R2D.nodes.push({ n, marks: nodeMarks(n) });
+  const rp = new Path2D(); world.rail.pts.forEach(([x, y], i) => i ? rp.lineTo(x, y) : rp.moveTo(x, y));
+  R2D.rail = rp;
+  R2D.railL = new Path2D(); R2D.railR = new Path2D();
+  for (let k = 0; k < world.rail.pts.length; k++) {
+    const q = railPoint(world.rail.cum[k]), nx = Math.sin(q.ang) * 0.72, ny = -Math.cos(q.ang) * 0.72;
+    k ? (R2D.railL.lineTo(q.x + nx, q.y + ny), R2D.railR.lineTo(q.x - nx, q.y - ny)) : (R2D.railL.moveTo(q.x + nx, q.y + ny), R2D.railR.moveTo(q.x - nx, q.y - ny));
   }
-  for (const e of world.edges) drawStreetMarkings(ctx, e, view, time);
-  for (const n of world.nodes) if (vis(n.x - 30, n.y - 30, n.x + 30, n.y + 30)) drawJunction(ctx, n, time);
-  // Skid marks.
+}
+
+// Stop lines, give-way lines, box junctions and cyclist boxes at a junction.
+function nodeMarks(n) {
+  const out = [];
+  const across = (arm, d, width, dash, color = COL.line) => {
+    const e = arm.e, dir = dirIn(arm), s = sFrom(arm, d);
+    const lo = dir > 0 ? e.div : -e.W / 2, hi = dir > 0 ? e.W / 2 : e.div;
+    const a = pointAt(e, s, lo + (dir > 0 && e.median ? e.median / 2 : 0)), b = pointAt(e, s, hi - (dir < 0 && e.median ? e.median / 2 : 0));
+    const p = new Path2D(); p.moveTo(a.x, a.y); p.lineTo(b.x, b.y);
+    out.push({ p, width, dash, color });
+  };
+  for (const arm of n.arms) {
+    if (!canEnter(arm)) continue;
+    if (n.type === 'lights' || (n.type === 'rb' && n.signals)) {
+      across(arm, n.r + 0.8, 0.35, null);
+      if (n.asl) { across(arm, n.r + 5.8, 0.35, null); out.push({ asl: true, arm, n }); }
+    }
+    if (n.type === 'rb' || n.type === 'mini' || (n.type === 'give' && !arm.major)) { across(arm, n.r + 0.4, 0.22, [0.6, 0.45]); across(arm, n.r + 1.0, 0.22, [0.6, 0.45]); }
+    if (n.type === 'stop' && !arm.major) { across(arm, n.r + 0.6, 0.45, null); out.push({ stopText: true, arm, n }); }
+  }
+  return out;
+}
+
+function drawWorld(ctx, time, view) {
+  const vis = (b) => b[2] > view.x0 && b[0] < view.x1 && b[3] > view.y0 && b[1] < view.y1;
+  // Ground by district.
+  ctx.fillStyle = COL.lawn; ctx.fillRect(0, 0, 1010, 870);
+  ctx.fillStyle = COL.city; ctx.fillRect(1090, 0, world.W - 1090, 660);
+  ctx.fillStyle = COL.village; ctx.beginPath(); ctx.arc(900, 1390, 240, 0, TAU); ctx.fill();
+  for (const f of world.fields) {
+    if (!vis([f.x0, f.y0, f.x1, f.y1])) continue;
+    ctx.fillStyle = COL.hedge; ctx.fillRect(f.x0 - 2, f.y0 - 2, f.x1 - f.x0 + 4, f.y1 - f.y0 + 4);
+    ctx.fillStyle = f.color; ctx.fillRect(f.x0, f.y0, f.x1 - f.x0, f.y1 - f.y0);
+    if (f.rows) { ctx.strokeStyle = 'rgba(60,70,20,.16)'; ctx.lineWidth = 0.8; ctx.beginPath();
+      if (f.ang) for (let x = f.x0 + 3; x < f.x1; x += 4) { ctx.moveTo(x, f.y0); ctx.lineTo(x, f.y1); } else for (let y = f.y0 + 3; y < f.y1; y += 4) { ctx.moveTo(f.x0, y); ctx.lineTo(f.x1, y); }
+      ctx.stroke(); }
+  }
+  ctx.fillStyle = '#86b35e'; ctx.fillRect(PARK.x0, PARK.y0, PARK.x1 - PARK.x0, PARK.y1 - PARK.y0);
+  ctx.fillStyle = COL.water; ctx.beginPath(); ctx.ellipse((PARK.x0 + PARK.x1) / 2, (PARK.y0 + PARK.y1) / 2, 30, 18, 0.3, 0, TAU); ctx.fill();
+  // Railway.
+  ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#8d8173'; ctx.lineWidth = 4.2; ctx.stroke(R2D.rail);
+  ctx.strokeStyle = '#5a4636'; ctx.lineWidth = 2.6; ctx.setLineDash([0.35, 0.65]); ctx.stroke(R2D.rail); ctx.setLineDash([]);
+  ctx.strokeStyle = '#a7adb3'; ctx.lineWidth = 0.18; ctx.stroke(R2D.railL); ctx.stroke(R2D.railR);
+  // Hedges, pavements, kerbs, carriageways.
+  const E = R2D.edges.filter(r => vis(r.bbox));
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = COL.hedge;
+  for (const r of E) if (r.hedge) { ctx.lineWidth = 1.8; ctx.stroke(r.hedge[0]); ctx.stroke(r.hedge[1]); }
+  const N = R2D.nodes.filter(x => x.n.x > view.x0 - 40 && x.n.x < view.x1 + 40 && x.n.y > view.y0 - 40 && x.n.y < view.y1 + 40);
+  ctx.strokeStyle = COL.pave; ctx.fillStyle = COL.pave;
+  for (const r of E) if (r.e.pave) { ctx.lineWidth = r.e.W + 2 * PAVE; ctx.stroke(r.centre); }
+  for (const { n } of N) if (n.pave && n.arms.some(a => a.e.pave)) { ctx.beginPath(); ctx.arc(n.x, n.y, (n.type === 'rb' ? n.ringR : n.r) + PAVE, 0, TAU); ctx.fill(); }
+  ctx.strokeStyle = COL.kerb; ctx.fillStyle = COL.kerb;
+  for (const r of E) if (r.e.pave) { ctx.lineWidth = r.e.W + 0.7; ctx.stroke(r.centre); }
+  for (const r of E) for (const bay of r.e.bays) { const q = pointAt(r.e, bay.s, bay.side * (r.e.W / 2 + 1)); ctx.fillStyle = COL.rural; ctx.beginPath(); ctx.ellipse(q.x, q.y, 12, 2.6, q.ang, 0, TAU); ctx.fill(); }
+  for (const r of E) { ctx.strokeStyle = r.e.kind === 'rural' || r.e.kind === 'single' ? COL.rural : r.e.kind === 'dual' ? COL.dual : COL.road; ctx.lineWidth = r.e.W; ctx.stroke(r.centre); }
+  for (const { n } of N) {
+    if (n.type === 'bend' || n.type === 'gateway') continue;
+    ctx.fillStyle = COL.kerb; ctx.beginPath(); ctx.arc(n.x, n.y, (n.type === 'rb' ? n.ringR : n.r) + 0.35, 0, TAU); if (n.pave && (n.type === 'rb' || n.arms.some(a => a.e.pave))) ctx.fill();
+    ctx.fillStyle = COL.road; ctx.beginPath(); ctx.arc(n.x, n.y, n.type === 'rb' ? n.ringR : n.r, 0, TAU); ctx.fill();
+  }
+  // Repaint arm mouths over the kerb ring so roads run into junctions cleanly.
+  ctx.lineCap = 'butt';
+  for (const { n } of N) for (const arm of n.arms) {
+    if (n.type === 'bend' || n.type === 'gateway') continue;
+    const R0 = (n.type === 'rb' ? n.ringR : n.r) - 2, a = pointAt(arm.e, sFrom(arm, Math.max(0, R0))), b = pointAt(arm.e, sFrom(arm, R0 + 5));
+    ctx.strokeStyle = arm.e.kind === 'rural' || arm.e.kind === 'single' ? COL.rural : arm.e.kind === 'dual' ? COL.dual : COL.road;
+    ctx.lineWidth = arm.e.W; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  // Central reservations.
+  for (const r of E) if (r.e.median) {
+    const e = r.e, s0 = e.a.r + 2, s1 = e.len - e.b.r - 2;
+    const med = offsetPath(e, e.div, s0, s1, 6);
+    ctx.strokeStyle = COL.kerb; ctx.lineWidth = e.median; ctx.stroke(med);
+    ctx.strokeStyle = '#6f9a4f'; ctx.lineWidth = e.median - 0.6; ctx.stroke(med);
+    ctx.strokeStyle = '#9aa0a6'; ctx.lineWidth = 0.25; ctx.stroke(med);
+  }
+  // Surfaces and markings.
+  ctx.lineCap = 'butt';
+  for (const r of E) if (r.bus) { ctx.strokeStyle = COL.bus; ctx.lineWidth = r.e.laneW - 0.3; for (const p of r.bus) ctx.stroke(p); }
+  for (const r of E) for (const m of r.marks) { ctx.strokeStyle = m.color; ctx.lineWidth = m.width; ctx.setLineDash(m.dash || []); ctx.stroke(m.p); }
+  ctx.setLineDash([]);
+  for (const r of E) {
+    for (const c of world.crossings) if (c.e === r.e) drawCrossingStripes(ctx, c);
+    for (const h of r.humps) { ctx.save(); ctx.translate(h.q.x, h.q.y); ctx.rotate(h.q.ang); ctx.fillStyle = 'rgba(255,255,255,.8)';
+      for (let l = -r.e.W / 2 + 0.6; l < r.e.W / 2 - 0.6; l += 1.6) { ctx.beginPath(); ctx.moveTo(-0.9, l); ctx.lineTo(0.9, l + 0.5); ctx.lineTo(-0.9, l + 1); ctx.fill(); }
+      ctx.restore(); }
+    for (const a of r.arrows) drawArrow(ctx, a);
+    ctx.fillStyle = 'rgba(244,244,239,.9)'; ctx.font = '700 1.1px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const t of r.texts) { ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.ang); ctx.fillText(t.text, 0, 0); ctx.restore(); }
+  }
+  for (const { n, marks } of N) drawJunction(ctx, n, marks, time);
+  for (const lx of world.levelX) if (lx.x > view.x0 && lx.x < view.x1 && lx.y > view.y0 && lx.y < view.y1) drawLevelCrossing(ctx, lx, time);
   ctx.lineCap = 'round';
   for (const s of skids) { ctx.strokeStyle = `rgba(20,20,20,${s.a * 0.5})`; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.moveTo(s.x0, s.y0); ctx.lineTo(s.x1, s.y1); ctx.stroke(); }
 }
 
-function dashLine(ctx, x0, y0, x1, y1, on, off) { ctx.setLineDash([on, off]); ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.setLineDash([]); }
-
-function drawStreetMarkings(ctx, e, view, time) {
-  const d = DIRS[e.dir], o = [d[1], d[0]];
-  const s0 = e.a.r + 3, s1 = SP - e.b.r - 3;
-  const px = (s, lat) => [e.a.x + d[0] * s + o[0] * lat, e.a.y + d[1] * s + o[1] * lat];
-  const A = px(s0, 0), B = px(s1, 0);
-  if (Math.max(A[0], B[0]) < view.x0 - 10 || Math.min(A[0], B[0]) > view.x1 + 10 || Math.max(A[1], B[1]) < view.y0 - 10 || Math.min(A[1], B[1]) > view.y1 + 10) return;
-  ctx.strokeStyle = COL.line; ctx.lineWidth = 0.15;
-  if (e.ring) { for (const lat of [-W / 2 + 0.4, W / 2 - 0.4]) { const a = px(s0 - 3, lat), b = px(s1 + 3, lat); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } }
-  ctx.lineWidth = 0.15;
-  if (e.zebra) {
-    const zs = e.zebra.along;
-    let a = px(s0, 0), b = px(zs - 13, 0); dashLine(ctx, a[0], a[1], b[0], b[1], 3, 6);
-    a = px(zs + 13, 0); b = px(s1, 0); dashLine(ctx, a[0], a[1], b[0], b[1], 3, 6);
-    drawZebra(ctx, e, px, zs, time);
-  } else dashLine(ctx, A[0], A[1], B[0], B[1], 3, 6);
+function drawCrossingStripes(ctx, c) {
+  const e = c.e;
+  ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.ang);
+  if (c.kind === 'zebra') { ctx.fillStyle = COL.line; for (let l = -e.W / 2 + 0.3; l < e.W / 2 - 0.3; l += 1.2) ctx.fillRect(-1.5, l, 3, 0.6); }
+  else { ctx.strokeStyle = COL.line; ctx.lineWidth = 0.15; ctx.setLineDash([0.5, 0.5]); for (const x of [-1.6, 1.6]) { ctx.beginPath(); ctx.moveTo(x, -e.W / 2); ctx.lineTo(x, e.W / 2); ctx.stroke(); } ctx.setLineDash([]); }
+  ctx.restore();
+}
+function drawArrow(ctx, a) {
+  // Local frame: +x is the direction of travel, -y is the driver's left.
+  ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.ang); ctx.fillStyle = 'rgba(244,244,239,.85)';
+  const head = (x, y, rot) => { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.beginPath(); ctx.moveTo(1.2, 0); ctx.lineTo(0, -0.6); ctx.lineTo(0, 0.6); ctx.fill(); ctx.restore(); };
+  ctx.fillRect(-3, -0.15, 2.6, 0.3);
+  if (a.kind !== 'right') { ctx.fillRect(-0.5, -0.15, 0.8, 0.3); head(0.3, 0, 0); }
+  if (a.kind === 'leftAhead') { ctx.fillRect(-0.85, -1.4, 0.3, 1.4); head(-0.7, -1.4, -Math.PI / 2); }
+  if (a.kind === 'aheadRight' || a.kind === 'right') { ctx.fillRect(-0.85, 0, 0.3, 1.4); head(-0.7, 1.4, Math.PI / 2); }
+  ctx.restore();
 }
 
-function drawZebra(ctx, e, px, zs, time) {
-  ctx.fillStyle = COL.line;
-  for (let lat = -W / 2 + 0.3; lat < W / 2 - 0.3; lat += 1.2) {
-    const a = px(zs - 1.5, lat), b = px(zs + 1.5, lat + 0.6);
-    ctx.fillRect(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
-  }
-  // Give-way dashes and zigzags on both approaches.
-  ctx.strokeStyle = COL.line; ctx.lineWidth = 0.2;
-  for (const sg of [-1, 1]) {
-    let a = px(zs + sg * 2.6, -W / 2), b = px(zs + sg * 2.6, W / 2); dashLine(ctx, a[0], a[1], b[0], b[1], 0.6, 0.4);
-    for (const lat of [-W / 2 + 0.5, 0, W / 2 - 0.5]) {
-      ctx.beginPath();
-      for (let k = 0; k <= 10; k++) { const p = px(zs + sg * (3.5 + k), lat + (k % 2 ? 0.35 : -0.35)); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }
-      ctx.stroke();
-    }
-  }
-  // Belisha beacons: flashing amber globes on striped poles.
-  const on = Math.floor(time * 1.6 + e.zebra.flash * 2) % 2 === 0;
-  for (const lat of [-W / 2 - 1.2, W / 2 + 1.2]) for (const sg of [-1, 1]) {
-    const p = px(zs + sg * 1.9, lat);
-    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(p[0], p[1], 0.55, 0, 7); ctx.fill();
-    ctx.fillStyle = on ? '#ffb000' : '#8a5a10'; ctx.beginPath(); ctx.arc(p[0], p[1], 0.42, 0, 7); ctx.fill();
-    if (on) { ctx.fillStyle = 'rgba(255,190,40,.25)'; ctx.beginPath(); ctx.arc(p[0], p[1], 1.4, 0, 7); ctx.fill(); }
-  }
-}
-
-function drawJunction(ctx, n, time) {
-  ctx.strokeStyle = COL.line;
+function drawJunction(ctx, n, marks, time) {
   if (n.type === 'rb') {
-    ctx.fillStyle = COL.kerb; ctx.beginPath(); ctx.arc(n.x, n.y, RB_IN, 0, 7); ctx.fill();
-    ctx.fillStyle = COL.island; ctx.beginPath(); ctx.arc(n.x, n.y, RB_IN - 0.5, 0, 7); ctx.fill();
-    ctx.fillStyle = '#e3c34a'; for (let k = 0; k < 6; k++) { const a = k * 1.05 + 0.3; ctx.beginPath(); ctx.arc(n.x + Math.cos(a) * 2.5, n.y + Math.sin(a) * 2.5, 0.6, 0, 7); ctx.fill(); }
-    // Clockwise arrows painted on the circulating lane.
+    ctx.fillStyle = COL.kerb; ctx.beginPath(); ctx.arc(n.x, n.y, n.islandR + 0.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = COL.island; ctx.beginPath(); ctx.arc(n.x, n.y, n.islandR, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#e3c34a'; for (let k = 0; k < 8; k++) { const a = k * 0.8; ctx.beginPath(); ctx.arc(n.x + Math.cos(a) * n.islandR * 0.5, n.y + Math.sin(a) * n.islandR * 0.5, 0.7, 0, TAU); ctx.fill(); }
+    if (n.ringLanes > 1) { ctx.strokeStyle = COL.line; ctx.lineWidth = 0.15; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.arc(n.x, n.y, n.ringR - LANE_W, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
     ctx.fillStyle = 'rgba(244,244,239,.85)';
-    for (let k = 0; k < 4; k++) {
-      const a = k * Math.PI / 2 + Math.PI / 4, r = RB_LANE;
+    for (let k = 0; k < 6; k++) {
+      const a = k * TAU / 6 + 0.4, r = n.ringR - LANE_W * 0.55;
       ctx.save(); ctx.translate(n.x + Math.cos(a) * r, n.y + Math.sin(a) * r); ctx.rotate(a + Math.PI / 2);
       ctx.beginPath(); ctx.moveTo(1.6, 0); ctx.lineTo(-0.2, -1); ctx.lineTo(-0.2, -0.35); ctx.lineTo(-1.6, -0.35); ctx.lineTo(-1.6, 0.35); ctx.lineTo(-0.2, 0.35); ctx.lineTo(-0.2, 1); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
-    ctx.lineWidth = 0.2;
-    for (const arm of n.arms) giveWayLine(ctx, n, arm, RB_OUT + 0.4);
-    return;
   }
-  if (n.type === 'lights') {
-    ctx.lineWidth = 0.35;
-    for (const arm of n.arms) { const [a, b] = acrossIncoming(n, arm, n.r + 1.2); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+  if (n.type === 'mini') {
+    ctx.fillStyle = '#f4f4ef'; ctx.beginPath(); ctx.arc(n.x, n.y, n.islandR, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#d8d8d2'; ctx.beginPath(); ctx.arc(n.x - 0.3, n.y - 0.3, n.islandR * 0.6, 0, TAU); ctx.fill();
   }
-  if (n.type === 'give') { ctx.lineWidth = 0.2; for (const arm of n.arms) if (arm % 2 !== n.major) giveWayLine(ctx, n, arm, n.r + 0.4); }
-}
-function acrossIncoming(n, arm, t) {      // stop line across the lane coming in on `arm`
-  const d = DIRS[arm], l = leftOf([-d[0], -d[1]]);
-  return [[n.x + d[0] * t, n.y + d[1] * t], [n.x + d[0] * t + l[0] * W / 2, n.y + d[1] * t + l[1] * W / 2]];
-}
-function giveWayLine(ctx, n, arm, t) {
-  for (const k of [0, 0.6]) { const [a, b] = acrossIncoming(n, arm, t + k); dashLine(ctx, a[0], a[1], b[0], b[1], 0.6, 0.45); }
-  // Painted triangle a few metres back.
-  const d = DIRS[arm], l = leftOf([-d[0], -d[1]]), c = [n.x + d[0] * (t + 6) + l[0] * LANE, n.y + d[1] * (t + 6) + l[1] * LANE];
-  ctx.lineWidth = 0.25; ctx.beginPath();
-  ctx.moveTo(c[0] + d[0] * 2.2, c[1] + d[1] * 2.2);   // apex points back at the approaching driver
-  ctx.lineTo(c[0] - d[0] * 1.6 + l[0] * 0.9, c[1] - d[1] * 1.6 + l[1] * 0.9);
-  ctx.lineTo(c[0] - d[0] * 1.6 - l[0] * 0.9, c[1] - d[1] * 1.6 - l[1] * 0.9); ctx.closePath(); ctx.stroke();
+  if (n.box) {
+    ctx.save(); ctx.translate(n.x, n.y); ctx.rotate(n.arms[0].ang);
+    const h = n.r * 0.92; ctx.strokeStyle = COL.yellow; ctx.lineWidth = 0.2;
+    ctx.strokeRect(-h, -h, 2 * h, 2 * h);
+    ctx.restore();
+    ctx.save(); ctx.translate(n.x, n.y); ctx.rotate(n.arms[0].ang); ctx.beginPath(); ctx.rect(-h, -h, 2 * h, 2 * h); ctx.clip();
+    ctx.strokeStyle = COL.yellow; ctx.lineWidth = 0.2; ctx.beginPath();
+    for (let k = -2 * h; k <= 2 * h; k += 2.4) { ctx.moveTo(k - h, -h); ctx.lineTo(k + h, h); ctx.moveTo(k + h, -h); ctx.lineTo(k - h, h); }
+    ctx.stroke(); ctx.restore();
+  }
+  for (const m of marks) {
+    if (m.p) { ctx.strokeStyle = m.color; ctx.lineWidth = m.width; ctx.setLineDash(m.dash || []); ctx.stroke(m.p); ctx.setLineDash([]); continue; }
+    const e = m.arm.e, dir = dirIn(m.arm);
+    if (m.asl) {
+      const q = pointAt(e, sFrom(m.arm, n.r + 3.3), dir > 0 ? (e.div + e.W / 2) / 2 : (e.div - e.W / 2) / 2);
+      ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(dir > 0 ? q.ang : q.ang + Math.PI);
+      ctx.fillStyle = 'rgba(63,143,79,.55)'; const w = (dir > 0 ? e.W / 2 - e.div : e.W / 2 + e.div) - 0.2; ctx.fillRect(-2.4, -w / 2, 4.8, w);
+      ctx.strokeStyle = COL.line; ctx.lineWidth = 0.14; for (const x of [-0.8, 0.8]) { ctx.beginPath(); ctx.arc(x, 0, 0.55, 0, TAU); ctx.stroke(); }
+      ctx.restore();
+    }
+    if (m.stopText) {
+      const q = pointAt(e, sFrom(m.arm, n.r + 4), laneLat(e, dir, 0));
+      ctx.save(); ctx.translate(q.x, q.y); ctx.rotate((dir > 0 ? q.ang : q.ang + Math.PI) + Math.PI / 2);
+      ctx.fillStyle = COL.line; ctx.font = '700 1.5px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('STOP', 0, 0); ctx.restore();
+    }
+  }
 }
 
+function drawLevelCrossing(ctx, lx, time) {
+  const e = lx.e;
+  ctx.save(); ctx.translate(lx.x, lx.y); ctx.rotate(lx.ang);
+  ctx.strokeStyle = '#a7adb3'; ctx.lineWidth = 0.18;
+  const ra = railPoint(lx.sr).ang - lx.ang, dx = Math.cos(ra), dy = Math.sin(ra), L = e.W * 0.75;
+  for (const o of [-0.72, 0.72]) { const bx = -dy * o, by = dx * o; ctx.beginPath(); ctx.moveTo(bx - dx * L, by - dy * L); ctx.lineTo(bx + dx * L, by + dy * L); ctx.stroke(); }
+  ctx.strokeStyle = COL.line; ctx.lineWidth = 0.3;
+  for (const x of [-7.6, 7.6]) { ctx.beginPath(); ctx.moveTo(x, -e.W / 2); ctx.lineTo(x, e.W / 2); ctx.stroke(); }
+  // Half barriers on the approach side of each lane, striped red and white.
+  for (const [x, side] of [[-7, 1], [7, -1]]) {
+    const L = e.W / 2 * lx.barrier;
+    ctx.lineWidth = 0.35;
+    for (let k = 0; k < 6; k++) { ctx.strokeStyle = k % 2 ? '#d4202a' : '#fff'; ctx.beginPath(); ctx.moveTo(x, side * (e.W / 2 + 0.6 - k * L / 6)); ctx.lineTo(x, side * (e.W / 2 + 0.6 - (k + 1) * L / 6)); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+// Renderer, part 2: vehicles, people, buildings, signs (drawn upright on screen) and the minimap.
 function drawCar(ctx, c, time) {
   ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.heading);
   const L = c.len, Wd = c.wid;
   ctx.fillStyle = 'rgba(0,0,0,.28)'; roundRect(ctx, -L / 2 + 0.3, -Wd / 2 + 0.35, L, Wd, 0.5); ctx.fill();
+  if (c.kind === 'tractor') {
+    ctx.fillStyle = '#1b1b1b'; ctx.fillRect(-L / 2, -Wd / 2 - 0.1, 1.6, 0.6); ctx.fillRect(-L / 2, Wd / 2 - 0.5, 1.6, 0.6);
+    ctx.fillRect(L / 2 - 1.2, -Wd / 2 + 0.1, 0.9, 0.4); ctx.fillRect(L / 2 - 1.2, Wd / 2 - 0.5, 0.9, 0.4);
+    ctx.fillStyle = c.color; roundRect(ctx, -L / 2 + 0.2, -Wd / 2 + 0.5, L - 0.4, Wd - 1, 0.3); ctx.fill();
+    ctx.fillStyle = '#c9d6c2'; ctx.fillRect(-L / 2 + 0.4, -0.6, 1.4, 1.2);
+    ctx.fillStyle = '#ffb000'; ctx.beginPath(); ctx.arc(-L / 2 + 1.1, 0, 0.25 + 0.1 * Math.sin(time * 8), 0, TAU); ctx.fill();
+    ctx.restore(); return;
+  }
   ctx.fillStyle = c.color; roundRect(ctx, -L / 2, -Wd / 2, L, Wd, c.kind === 'bus' ? 0.4 : 0.6); ctx.fill();
   if (c.kind === 'bus') {
-    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(-L / 2 + 0.6, -Wd / 2 + 0.4, L - 1.4, Wd - 0.8);
-    ctx.fillStyle = '#d9d9d9'; for (let k = 0; k < 3; k++) ctx.fillRect(-L / 2 + 1.5 + k * 2.8, -0.5, 1.6, 1);
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(-L / 2 + 0.6, -Wd / 2 + 0.35, L - 1.2, Wd - 0.7);
+    ctx.fillStyle = '#e8e8e8'; for (let k = 0; k < 4; k++) ctx.fillRect(-L / 2 + 1.2 + k * 2.4, -0.45, 1.5, 0.9);
+    ctx.fillStyle = '#26323d'; ctx.fillRect(L / 2 - 0.5, -Wd / 2 + 0.25, 0.35, Wd - 0.5);
   } else {
     ctx.fillStyle = '#26323d';
     ctx.beginPath(); ctx.moveTo(L * 0.22, -Wd / 2 + 0.2); ctx.lineTo(L * 0.34, -Wd / 2 + 0.3); ctx.lineTo(L * 0.34, Wd / 2 - 0.3); ctx.lineTo(L * 0.22, Wd / 2 - 0.2); ctx.closePath(); ctx.fill();
     ctx.fillRect(-L * 0.38, -Wd / 2 + 0.3, L * 0.09, Wd - 0.6);
     ctx.fillStyle = 'rgba(255,255,255,.14)'; roundRect(ctx, -L * 0.27, -Wd / 2 + 0.25, L * 0.48, Wd - 0.5, 0.35); ctx.fill();
+    if (c.kind === 'taxi') { ctx.fillStyle = '#ffcc33'; ctx.fillRect(-0.1, -0.35, 0.5, 0.7); }
+    if (c.kind === 'van') { ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(-L / 2 + 0.2, -Wd / 2 + 0.2, L * 0.62, Wd - 0.4); }
   }
-  // Lights.
-  ctx.fillStyle = '#fff6c8'; ctx.fillRect(L / 2 - 0.25, -Wd / 2 + 0.15, 0.25, 0.4); ctx.fillRect(L / 2 - 0.25, Wd / 2 - 0.55, 0.25, 0.4);
-  const braking = c.ai ? c.braking : c.brakeLight;
-  ctx.fillStyle = braking ? '#ff2a2a' : '#7a1010'; ctx.fillRect(-L / 2, -Wd / 2 + 0.15, 0.22, 0.45); ctx.fillRect(-L / 2, Wd / 2 - 0.6, 0.22, 0.45);
-  if (braking) { ctx.fillStyle = 'rgba(255,40,40,.25)'; ctx.fillRect(-L / 2 - 1, -Wd / 2, 1, Wd); }
-  if (c.reversing) { ctx.fillStyle = '#fff'; ctx.fillRect(-L / 2, -0.15, 0.2, 0.3); }
-  if (c.ind && Math.floor(time * 2.6) % 2 === 0) {
-    const side = c.ind > 0 ? Wd / 2 : -Wd / 2;   // right-hand side of the car is +y in car space
-    ctx.fillStyle = '#ffa500';
-    ctx.beginPath(); ctx.arc(L / 2 - 0.25, side * 0.85, 0.32, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(-L / 2 + 0.25, side * 0.85, 0.32, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(255,165,0,.3)'; ctx.beginPath(); ctx.arc(L / 2 - 0.25, side * 0.85, 1, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(-L / 2 + 0.25, side * 0.85, 1, 0, 7); ctx.fill();
+  if (!c.parked) {
+    ctx.fillStyle = '#fff6c8'; ctx.fillRect(L / 2 - 0.25, -Wd / 2 + 0.15, 0.25, 0.4); ctx.fillRect(L / 2 - 0.25, Wd / 2 - 0.55, 0.25, 0.4);
+    const braking = c.ai ? c.braking : c.brakeLight;
+    ctx.fillStyle = braking ? '#ff2a2a' : '#7a1010'; ctx.fillRect(-L / 2, -Wd / 2 + 0.15, 0.22, 0.45); ctx.fillRect(-L / 2, Wd / 2 - 0.6, 0.22, 0.45);
+    if (braking) { ctx.fillStyle = 'rgba(255,40,40,.25)'; ctx.fillRect(-L / 2 - 1, -Wd / 2, 1, Wd); }
+    if (c.reversing) { ctx.fillStyle = '#fff'; ctx.fillRect(-L / 2, -0.15, 0.2, 0.3); }
+    if (c.ind && Math.floor(time * 2.6) % 2 === 0) {
+      const side = c.ind > 0 ? Wd / 2 : -Wd / 2;
+      for (const x of [L / 2 - 0.25, -L / 2 + 0.25]) {
+        ctx.fillStyle = '#ffa500'; ctx.beginPath(); ctx.arc(x, side * 0.85, 0.32, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(255,165,0,.3)'; ctx.beginPath(); ctx.arc(x, side * 0.85, 1, 0, TAU); ctx.fill();
+      }
+    }
   }
-  if (!c.ai) {
-    // L plates front and back, and the driver sitting on the RIGHT.
-    for (const x of [L / 2 - 0.55, -L / 2 + 0.15]) {
+  if (!c.ai && !c.parked) {
+    for (const x of [L / 2 - 0.55, -L / 2 + 0.15]) {           // L plates
       ctx.fillStyle = '#fff'; ctx.fillRect(x, -0.3, 0.42, 0.6);
       ctx.fillStyle = '#d0021b'; ctx.fillRect(x + 0.08, -0.2, 0.08, 0.42); ctx.fillRect(x + 0.08, 0.13, 0.26, 0.09);
     }
-    ctx.fillStyle = '#f0c9a0'; ctx.beginPath(); ctx.arc(L * 0.12, Wd * 0.22, 0.28, 0, 7); ctx.fill();
-    ctx.strokeStyle = '#111'; ctx.lineWidth = 0.08; ctx.beginPath(); ctx.arc(L * 0.24, Wd * 0.22, 0.22, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#f0c9a0'; ctx.beginPath(); ctx.arc(L * 0.12, Wd * 0.22, 0.28, 0, TAU); ctx.fill();   // driver sits on the right
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 0.08; ctx.beginPath(); ctx.arc(L * 0.24, Wd * 0.22, 0.22, 0, TAU); ctx.stroke();
   }
   ctx.restore();
 }
 
+function drawTrain(ctx, tr, view) {
+  if (tr.wait > 0) return;
+  for (let k = 0; k < 4; k++) {
+    const q = railPoint(tr.s - tr.dir * (k * 23 + 11.5));
+    if (q.x < view.x0 - 20 || q.x > view.x1 + 20 || q.y < view.y0 - 20 || q.y > view.y1 + 20) continue;
+    ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.ang);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-11, -1.2, 22.5, 3.2);
+    ctx.fillStyle = '#2f4f7f'; roundRect(ctx, -11, -1.45, 22, 2.9, 0.6); ctx.fill();
+    ctx.fillStyle = '#c9ced6'; ctx.fillRect(-10, -0.5, 20, 1);
+    if (k === 0) { ctx.fillStyle = '#f2c230'; ctx.fillRect(tr.dir > 0 ? 9.5 : -11, -1.45, 1.5, 2.9); }
+    ctx.restore();
+  }
+}
+
 function drawPed(ctx, p, time) {
   const bob = Math.sin(time * 8 + p.x) * 0.08;
-  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.arc(p.x + 0.15, p.y + 0.2, 0.45, 0, 7); ctx.fill();
-  ctx.fillStyle = p.color; ctx.beginPath(); ctx.ellipse(p.x, p.y, 0.55, 0.55 + bob, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#5b3a29'; ctx.beginPath(); ctx.arc(p.x, p.y, 0.3, 0, 7); ctx.fill();
-  if (p.hit > 0) { ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 0.15; ctx.beginPath(); ctx.arc(p.x, p.y, 1 + Math.sin(time * 12) * 0.2, 0, 7); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.arc(p.x + 0.15, p.y + 0.2, 0.5, 0, TAU); ctx.fill();
+  ctx.fillStyle = p.color; ctx.beginPath(); ctx.ellipse(p.x, p.y, 0.55, 0.55 + bob, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#5b3a29'; ctx.beginPath(); ctx.arc(p.x, p.y, 0.3, 0, TAU); ctx.fill();
+  if (p.hit > 0) { ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 0.15; ctx.beginPath(); ctx.arc(p.x, p.y, 1 + Math.sin(time * 12) * 0.2, 0, TAU); ctx.stroke(); }
 }
 
 function drawBuildingsAndTrees(ctx, view, camRot) {
-  const vis = (x0, y0, x1, y1) => x1 > view.x0 && x0 < view.x1 && y1 > view.y0 && y0 < view.y1;
+  const inV = (x, y, m) => x > view.x0 - m && x < view.x1 + m && y > view.y0 - m && y < view.y1 + m;
   for (const h of world.buildings) {
-    if (!vis(h.x, h.y, h.x + h.w, h.y + h.h)) continue;
-    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(h.x + 1.2, h.y + 1.2, h.w, h.h);
-    ctx.fillStyle = h.roof; ctx.fillRect(h.x, h.y, h.w, h.h);
-    // Pitched roof: ridge along the long side, the far slope a little darker.
-    ctx.fillStyle = 'rgba(0,0,0,.16)';
-    if (h.w > h.h) ctx.fillRect(h.x, h.y + h.h / 2, h.w, h.h / 2); else ctx.fillRect(h.x + h.w / 2, h.y, h.w / 2, h.h);
-    ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 0.2; ctx.beginPath();
-    if (h.w > h.h) { ctx.moveTo(h.x, h.y + h.h / 2); ctx.lineTo(h.x + h.w, h.y + h.h / 2); } else { ctx.moveTo(h.x + h.w / 2, h.y); ctx.lineTo(h.x + h.w / 2, h.y + h.h); }
-    ctx.stroke();
-    if (!h.shop && !h.label && h.w * h.h < 140) { ctx.fillStyle = '#7a3a2a'; ctx.fillRect(h.x + h.w * 0.25, h.y + h.h * 0.2, 0.8, 0.8); }
-    if (h.label) {
-      ctx.save(); ctx.translate(h.x + h.w / 2, h.y + h.h / 2); ctx.rotate(camRot);
-      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = '600 4px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(h.label, 0, 0); ctx.restore();
+    if (!inV(h.x, h.y, 40)) continue;
+    ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.ang);
+    const sh = h.kind === 'flat' ? 1 + (h.height || 6) * 0.12 : 1.2;
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(-h.w / 2 + sh * 0.7, -h.h / 2 + sh, h.w, h.h);
+    ctx.fillStyle = h.roof; ctx.fillRect(-h.w / 2, -h.h / 2, h.w, h.h);
+    if (h.kind === 'flat') {
+      ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 0.4; ctx.strokeRect(-h.w / 2 + 0.6, -h.h / 2 + 0.6, h.w - 1.2, h.h - 1.2);
+      if (h.district === 'city' && !h.label) { ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(-h.w * 0.2, -h.h * 0.15, h.w * 0.18, h.h * 0.2); ctx.fillRect(h.w * 0.12, h.h * 0.05, 2, 2); }
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,.16)';
+      if (h.w > h.h) ctx.fillRect(-h.w / 2, 0, h.w, h.h / 2); else ctx.fillRect(0, -h.h / 2, h.w / 2, h.h);
+      ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 0.2; ctx.beginPath();
+      if (h.w > h.h) { ctx.moveTo(-h.w / 2, 0); ctx.lineTo(h.w / 2, 0); } else { ctx.moveTo(0, -h.h / 2); ctx.lineTo(0, h.h / 2); }
+      ctx.stroke();
+      if (h.district === 'suburb' && !h.label) { ctx.fillStyle = '#7a3a2a'; ctx.fillRect(h.w * 0.15, -h.h * 0.35, 0.8, 0.8); }
     }
-  }
-  for (const t of world.trees) {
-    if (!vis(t.x - t.r, t.y - t.r, t.x + t.r, t.y + t.r)) continue;
-    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.arc(t.x + 1, t.y + 1, t.r, 0, 7); ctx.fill();
-    ctx.fillStyle = '#3f6b2f'; ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, 7); ctx.fill();
-    ctx.fillStyle = '#4f8139'; ctx.beginPath(); ctx.arc(t.x - t.r * 0.25, t.y - t.r * 0.25, t.r * 0.6, 0, 7); ctx.fill();
-  }
-}
-
-// Upright signs and signal heads (scaled up a bit beyond real life so they read on screen).
-function drawSignsAndLights(ctx, view, camRot, time) {
-  const inView = (x, y) => x > view.x0 && x < view.x1 && y > view.y0 && y < view.y1;
-  for (const s of world.signs) {
-    if (!inView(s.x, s.y)) continue;
-    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(camRot);
-    if (s.kind === 'limit') {
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, 7); ctx.fill();
-      if (s.limit === 60) {
-        ctx.strokeStyle = '#111'; ctx.lineWidth = 0.1; ctx.stroke();
-        ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 1.45, 0, 7); ctx.clip(); ctx.rotate(-Math.PI / 4 + Math.PI / 2);
-        ctx.fillStyle = '#111'; ctx.fillRect(-2, -0.32, 4, 0.64); ctx.restore();
-      } else {
-        ctx.strokeStyle = '#d4202a'; ctx.lineWidth = 0.32; ctx.beginPath(); ctx.arc(0, 0, 1.32, 0, 7); ctx.stroke();
-        ctx.fillStyle = '#111'; ctx.font = '700 1.45px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s.limit, 0, 0.08);
-      }
-    } else if (s.kind === 'giveway') {
-      ctx.fillStyle = '#d4202a'; ctx.beginPath(); ctx.moveTo(-1.5, -1.1); ctx.lineTo(1.5, -1.1); ctx.lineTo(0, 1.5); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-0.95, -0.75); ctx.lineTo(0.95, -0.75); ctx.lineTo(0, 0.85); ctx.closePath(); ctx.fill();
-    }
+    if (h.label) { ctx.rotate(camRot - h.ang); ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.font = '700 3.4px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(h.label, 0, 0); }
     ctx.restore();
   }
+  for (const t of world.trees) {
+    if (!inV(t.x, t.y, 8)) continue;
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.arc(t.x + 1, t.y + 1, t.r, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#3f6b2f'; ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#4f8139'; ctx.beginPath(); ctx.arc(t.x - t.r * 0.25, t.y - t.r * 0.25, t.r * 0.6, 0, TAU); ctx.fill();
+  }
+}
+
+// ---- Signs. Sized a little larger than life so they read on screen.
+function tri(ctx, down) { ctx.fillStyle = '#d4202a'; ctx.beginPath(); if (down) { ctx.moveTo(-1.5, -1.1); ctx.lineTo(1.5, -1.1); ctx.lineTo(0, 1.5); } else { ctx.moveTo(0, -1.5); ctx.lineTo(1.6, 1.2); ctx.lineTo(-1.6, 1.2); } ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); if (down) { ctx.moveTo(-0.95, -0.75); ctx.lineTo(0.95, -0.75); ctx.lineTo(0, 0.85); } else { ctx.moveTo(0, -0.85); ctx.lineTo(1, 0.85); ctx.lineTo(-1, 0.85); } ctx.closePath(); ctx.fill(); }
+function txt(ctx, s, size, color, y = 0) { ctx.fillStyle = color; ctx.font = `700 ${size}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, y); }
+function drawSign(ctx, s) {
+  switch (s.kind) {
+    case 'limit':
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, TAU); ctx.fill();
+      if (s.nsl) { ctx.strokeStyle = '#111'; ctx.lineWidth = 0.1; ctx.stroke(); ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 1.45, 0, TAU); ctx.clip(); ctx.rotate(Math.PI / 4); ctx.fillStyle = '#111'; ctx.fillRect(-2, -0.3, 4, 0.6); ctx.restore(); }
+      else { ctx.strokeStyle = '#d4202a'; ctx.lineWidth = 0.32; ctx.beginPath(); ctx.arc(0, 0, 1.32, 0, TAU); ctx.stroke(); txt(ctx, s.limit, 1.45, '#111', 0.08); }
+      break;
+    case 'giveway': tri(ctx, true); break;
+    case 'stop':
+      ctx.fillStyle = '#d4202a'; ctx.beginPath(); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + Math.PI / 8; ctx.lineTo(Math.cos(a) * 1.5, Math.sin(a) * 1.5); } ctx.fill();
+      txt(ctx, 'STOP', 0.75, '#fff'); break;
+    case 'noentry': ctx.fillStyle = '#d4202a'; ctx.beginPath(); ctx.arc(0, 0, 1.4, 0, TAU); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(-1, -0.25, 2, 0.5); break;
+    case 'oneway': ctx.fillStyle = '#0b5cad'; ctx.fillRect(-1.1, -1.5, 2.2, 3); ctx.fillStyle = '#fff'; ctx.fillRect(-0.15, -0.6, 0.3, 1.6); ctx.beginPath(); ctx.moveTo(0, -1.2); ctx.lineTo(0.6, -0.5); ctx.lineTo(-0.6, -0.5); ctx.fill(); break;
+    case 'bus': ctx.fillStyle = '#0b5cad'; ctx.fillRect(-1.6, -1.2, 3.2, 2.4); ctx.fillStyle = '#fff'; ctx.fillRect(-0.9, -0.8, 1.8, 0.9); txt(ctx, 'BUS LANE', 0.42, '#fff', 0.65); break;
+    case 'single': ctx.fillStyle = '#fff'; ctx.fillRect(-1.8, -1, 3.6, 2); ctx.strokeStyle = '#111'; ctx.lineWidth = 0.1; ctx.strokeRect(-1.8, -1, 3.6, 2); txt(ctx, 'SINGLE TRACK', 0.36, '#111', -0.35); txt(ctx, 'passing places', 0.32, '#111', 0.35); break;
+    case 'passing': ctx.fillStyle = '#fff'; ctx.fillRect(-1.3, -0.6, 2.6, 1.2); ctx.strokeStyle = '#111'; ctx.lineWidth = 0.08; ctx.strokeRect(-1.3, -0.6, 2.6, 1.2); txt(ctx, 'Passing place', 0.32, '#111'); break;
+    case 'hump': tri(ctx, false); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0.75, 0.55, Math.PI, TAU); ctx.fill(); break;
+    case 'school': tri(ctx, false); ctx.fillStyle = '#111'; for (const x of [-0.35, 0.35]) { ctx.beginPath(); ctx.arc(x, 0.1, 0.17, 0, TAU); ctx.fill(); ctx.fillRect(x - 0.12, 0.25, 0.24, 0.5); } break;
+    case 'rbwarn': tri(ctx, false); ctx.strokeStyle = '#111'; ctx.lineWidth = 0.15; ctx.beginPath(); ctx.arc(0, 0.35, 0.45, 0, TAU); ctx.stroke(); break;
+    case 'lxwarn': tri(ctx, false); ctx.fillStyle = '#111'; for (let x = -0.6; x <= 0.6; x += 0.3) ctx.fillRect(x - 0.05, 0.1, 0.1, 0.6); ctx.fillRect(-0.7, 0.3, 1.4, 0.1); break;
+    case 'mini': ctx.fillStyle = '#0b5cad'; ctx.beginPath(); ctx.arc(0, 0, 1.4, 0, TAU); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.22; ctx.beginPath(); ctx.arc(0, 0, 0.75, 0.3, TAU - 0.3); ctx.stroke(); break;
+    case 'yieldOncoming':
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 1.45, 0, TAU); ctx.fill(); ctx.strokeStyle = '#d4202a'; ctx.lineWidth = 0.3; ctx.stroke();
+      ctx.fillStyle = '#111'; ctx.fillRect(0.25, -0.6, 0.2, 1.2); ctx.fillStyle = '#d4202a'; ctx.fillRect(-0.45, -0.6, 0.2, 1.2); break;
+    case 'priority': ctx.fillStyle = '#0b5cad'; ctx.fillRect(-1.3, -1.3, 2.6, 2.6); ctx.fillStyle = '#fff'; ctx.fillRect(-0.45, -0.7, 0.25, 1.4); ctx.fillStyle = '#d4202a'; ctx.fillRect(0.25, -0.7, 0.25, 1.4); break;
+    case 'village': ctx.fillStyle = '#fff'; ctx.fillRect(-2.6, -0.8, 5.2, 1.6); ctx.strokeStyle = '#111'; ctx.lineWidth = 0.1; ctx.strokeRect(-2.6, -0.8, 5.2, 1.6); txt(ctx, s.text, 0.62, '#111'); break;
+    case 'chevron': ctx.fillStyle = '#111'; ctx.fillRect(-1.8, -0.7, 3.6, 1.4); ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.25;
+      for (const x of [-0.9, 0, 0.9]) { ctx.beginPath(); const d = s.right ? 1 : -1; ctx.moveTo(x - d * 0.3, -0.5); ctx.lineTo(x + d * 0.3, 0); ctx.lineTo(x - d * 0.3, 0.5); ctx.stroke(); } break;
+  }
+}
+function signalHead(ctx, st, time) {
+  ctx.fillStyle = '#151515'; roundRect(ctx, -0.65, -1.75, 1.3, 3.5, 0.3); ctx.fill();
+  ctx.strokeStyle = '#f2f2f2'; ctx.lineWidth = 0.1; ctx.stroke();
+  const lamp = (y, on, col, dim) => { ctx.fillStyle = on ? col : dim; ctx.beginPath(); ctx.arc(0, y, 0.42, 0, TAU); ctx.fill(); if (on) { ctx.fillStyle = col + '44'; ctx.beginPath(); ctx.arc(0, y, 0.9, 0, TAU); ctx.fill(); } };
+  lamp(-1.1, st === 'R' || st === 'RA', '#ff2d2d', '#3a1010');
+  lamp(0, st === 'A' || st === 'RA', '#ffb000', '#3a2a08');
+  lamp(1.1, st === 'G', '#2ee06a', '#0d2a16');
+}
+function drawSignsAndLights(ctx, view, camRot, time) {
+  const inV = (x, y) => x > view.x0 && x < view.x1 && y > view.y0 && y < view.y1;
+  const upright = (x, y, f) => { ctx.save(); ctx.translate(x, y); ctx.rotate(camRot); f(); ctx.restore(); };
+  for (const s of world.signs) if (inV(s.x, s.y)) upright(s.x, s.y, () => drawSign(ctx, s));
   for (const n of world.nodes) {
-    if (n.type !== 'lights' || !inView(n.x, n.y)) continue;
+    if (!(n.type === 'lights' || n.signals) || !inV(n.x, n.y)) continue;
     for (const arm of n.arms) {
-      const d = DIRS[arm], l = leftOf([-d[0], -d[1]]), t = n.r + 1.6;
-      const x = n.x + d[0] * t + l[0] * (W / 2 + 1.3), y = n.y + d[1] * t + l[1] * (W / 2 + 1.3);
-      const st = lightState(n, arm % 2, time);
-      ctx.save(); ctx.translate(x, y); ctx.rotate(camRot);
-      ctx.fillStyle = '#151515'; roundRect(ctx, -0.65, -1.75, 1.3, 3.5, 0.3); ctx.fill();
-      ctx.strokeStyle = '#f2f2f2'; ctx.lineWidth = 0.1; ctx.stroke();
-      const lamp = (yy, on, col, dim) => { ctx.fillStyle = on ? col : dim; ctx.beginPath(); ctx.arc(0, yy, 0.42, 0, 7); ctx.fill();
-        if (on) { ctx.fillStyle = col + '44'; ctx.beginPath(); ctx.arc(0, yy, 0.9, 0, 7); ctx.fill(); } };
-      lamp(-1.1, st === 'R' || st === 'RA', '#ff2d2d', '#3a1010');
-      lamp(0, st === 'A' || st === 'RA', '#ffb000', '#3a2a08');
-      lamp(1.1, st === 'G', '#2ee06a', '#0d2a16');
-      ctx.restore();
+      if (!canEnter(arm)) continue;
+      const e = arm.e, dir = dirIn(arm), q = pointAt(e, sFrom(arm, n.r + 1.6), dir * (e.W / 2 + 1.3));
+      upright(q.x, q.y, () => signalHead(ctx, lightState(n, arm, time), time));
+    }
+  }
+  for (const c of world.crossings) {
+    if (!inV(c.x, c.y)) continue;
+    const e = c.e;
+    if (c.kind === 'puffin') for (const dir of [1, -1]) {
+      if (!lanesOf(e, dir)) continue;
+      const q = pointAt(e, c.s - dir * 4.5, dir * (e.W / 2 + 1.3));
+      upright(q.x, q.y, () => signalHead(ctx, puffinState(c, time), time));
+    } else {
+      const on = Math.floor(time * 1.6 + c.phase) % 2 === 0;
+      for (const lat of [-e.W / 2 - 1.2, e.W / 2 + 1.2]) for (const sg of [-1, 1]) {
+        const q = pointAt(e, c.s + sg * 1.9, lat);
+        ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(q.x, q.y, 0.55, 0, TAU); ctx.fill();
+        ctx.fillStyle = on ? '#ffb000' : '#8a5a10'; ctx.beginPath(); ctx.arc(q.x, q.y, 0.42, 0, TAU); ctx.fill();
+        if (on) { ctx.fillStyle = 'rgba(255,190,40,.25)'; ctx.beginPath(); ctx.arc(q.x, q.y, 1.4, 0, TAU); ctx.fill(); }
+      }
+    }
+  }
+  for (const lx of world.levelX) {
+    if (!inV(lx.x, lx.y)) continue;
+    for (const dir of [1, -1]) {
+      const q = pointAt(lx.e, lx.s - dir * 8.5, dir * (lx.e.W / 2 + 1.4));
+      upright(q.x, q.y, () => {
+        ctx.fillStyle = '#151515'; roundRect(ctx, -1.3, -1, 2.6, 2.2, 0.3); ctx.fill();
+        const flash = Math.floor(time * 3) % 2;
+        ctx.fillStyle = lx.state === 'amber' ? '#ffb000' : '#3a2a08'; ctx.beginPath(); ctx.arc(0, -0.45, 0.32, 0, TAU); ctx.fill();
+        for (const [x, k] of [[-0.7, 0], [0.7, 1]]) { const on = lx.state === 'red' && flash === k; ctx.fillStyle = on ? '#ff2d2d' : '#3a1010'; ctx.beginPath(); ctx.arc(x, 0.5, 0.42, 0, TAU); ctx.fill(); }
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.18; ctx.beginPath(); ctx.moveTo(-1.1, 1.5); ctx.lineTo(1.1, 2.4); ctx.moveTo(1.1, 1.5); ctx.lineTo(-1.1, 2.4); ctx.stroke();
+      });
     }
   }
 }
 
-// Minimap: static roads drawn once; the player arrow and nearby lights on top every frame.
+// ---- Minimap: Ordnance-Survey-ish colours. Green = primary route, orange = country roads.
 let miniCache = null;
 function drawMinimap(mctx, size, player, time) {
-  const s = size / Math.max(WORLD_W, WORLD_H);
-  const ox = (size - WORLD_W * s) / 2, oy = (size - WORLD_H * s) / 2;
+  const s = size / Math.max(world.W, world.H), ox = (size - world.W * s) / 2, oy = (size - world.H * s) / 2;
   if (!miniCache) {
     miniCache = document.createElement('canvas'); miniCache.width = miniCache.height = size;
     const c = miniCache.getContext('2d');
     c.fillStyle = '#2f4a2a'; c.fillRect(0, 0, size, size);
-    c.fillStyle = '#4b5d43'; for (const b of world.blocks) if (b.town) c.fillRect(ox + b.x0 * s, oy + b.y0 * s, (b.x1 - b.x0) * s, (b.y1 - b.y0) * s);
-    for (const e of world.edges) { c.strokeStyle = e.ring ? '#e6d9a8' : '#d9d9d2'; c.lineWidth = e.ring ? 3 : 2.2;
-      c.beginPath(); c.moveTo(ox + e.a.x * s, oy + e.a.y * s); c.lineTo(ox + e.b.x * s, oy + e.b.y * s); c.stroke(); }
-    for (const n of world.nodes) if (n.type === 'rb') { c.fillStyle = '#d9d9d2'; c.beginPath(); c.arc(ox + n.x * s, oy + n.y * s, 4, 0, 7); c.fill(); c.fillStyle = '#4b5d43'; c.beginPath(); c.arc(ox + n.x * s, oy + n.y * s, 1.6, 0, 7); c.fill(); }
-    for (const z of world.zebras) { c.fillStyle = '#ffb000'; c.fillRect(ox + z.x * s - 1.5, oy + z.y * s - 1.5, 3, 3); }
+    c.fillStyle = '#41573c'; c.fillRect(ox, oy, 1010 * s, 870 * s);
+    c.fillStyle = '#55524c'; c.fillRect(ox + 1090 * s, oy, (world.W - 1090) * s, 660 * s);
+    c.strokeStyle = '#111'; c.lineWidth = 1; c.setLineDash([2, 2]); c.beginPath();
+    world.rail.pts.forEach(([x, y], i) => i ? c.lineTo(ox + x * s, oy + y * s) : c.moveTo(ox + x * s, oy + y * s)); c.stroke(); c.setLineDash([]);
+    for (const e of world.edges) {
+      c.strokeStyle = e.kind === 'dual' ? '#3fae5a' : e.kind === 'rural' || e.kind === 'link' ? '#f0a35e' : e.kind === 'single' ? '#f6e3a8' : '#e9e6dc';
+      c.lineWidth = e.kind === 'dual' ? 3.2 : e.kind === 'rural' || e.kind === 'link' ? 2.2 : e.busF ? 2.6 : 1.6;
+      c.beginPath(); e.pts.forEach(([x, y], i) => i ? c.lineTo(ox + x * s, oy + y * s) : c.moveTo(ox + x * s, oy + y * s)); c.stroke();
+    }
+    for (const n of world.nodes) if (n.type === 'rb' || n.type === 'mini') { c.fillStyle = '#e9e6dc'; c.beginPath(); c.arc(ox + n.x * s, oy + n.y * s, n.type === 'rb' ? 3.2 : 1.8, 0, TAU); c.fill(); }
+    c.fillStyle = 'rgba(255,255,255,.75)'; c.font = '600 9px system-ui'; c.textAlign = 'center';
+    for (const [t, x, y] of [['Ashford Green', 560, 140], ['Kingsgate', 1400, 140], ['A40', 900, 975], ['Little Mardon', 900, 1560]]) c.fillText(t, ox + x * s, oy + y * s);
   }
   mctx.drawImage(miniCache, 0, 0);
-  for (const n of world.nodes) if (n.type === 'lights') {
-    const st = lightState(n, 0, time);
-    mctx.fillStyle = st === 'G' ? '#2ee06a' : '#ff2d2d'; mctx.beginPath(); mctx.arc(ox + n.x * s, oy + n.y * s, 2.2, 0, 7); mctx.fill();
-  }
+  for (const lx of world.levelX) if (lx.state !== 'open') { mctx.fillStyle = '#ff2d2d'; mctx.beginPath(); mctx.arc(ox + lx.x * s, oy + lx.y * s, 2.5, 0, TAU); mctx.fill(); }
+  for (const tr of world.trains) if (!tr.wait) { const q = railPoint(tr.s); mctx.fillStyle = '#6fa8ff'; mctx.fillRect(ox + q.x * s - 2, oy + q.y * s - 2, 4, 4); }
   mctx.save(); mctx.translate(ox + player.x * s, oy + player.y * s); mctx.rotate(player.heading);
   mctx.fillStyle = '#f7d117'; mctx.strokeStyle = '#111'; mctx.lineWidth = 1;
   mctx.beginPath(); mctx.moveTo(6, 0); mctx.lineTo(-4, -4); mctx.lineTo(-2, 0); mctx.lineTo(-4, 4); mctx.closePath(); mctx.fill(); mctx.stroke();
@@ -1616,7 +2499,7 @@ const ui = {
 
   init() {
     this.qOrder = QUESTIONS.map((_, i) => i).sort(() => Math.random() - 0.5);
-    $('startBtn').onclick = () => { sfx.init(); this.hide('title'); game.state = 'drive'; game.tip('You start on a town street. Drive on the LEFT. Q / E work the indicators.', 'start', 999); };
+    $('startBtn').onclick = () => { sfx.init(); this.hide('title'); game.state = 'drive'; game.tip('Drive on the LEFT. Q / E work the indicators, L is the speed limiter.', 'start', 999); };
     $('resumeBtn').onclick = () => this.resume();
     $('restartBtn').onclick = () => { newSession(); this.resume(); };
     $('pauseBtn').onclick = () => this.pause();
@@ -1627,6 +2510,9 @@ const ui = {
     $('camMode').onchange = (e) => { game.settings.camera = e.target.value; saveSettings(); };
     $('tipsOn').checked = game.settings.tips;
     $('tipsOn').onchange = (e) => { game.settings.tips = e.target.checked; saveSettings(); };
+    for (const id of ['assistMode', 'assistTitle']) { $(id).value = game.settings.assist; $(id).onchange = (e) => { game.settings.assist = e.target.value; saveSettings(); $('assistMode').value = $('assistTitle').value = e.target.value; }; }
+    $('startAt').value = game.settings.start;
+    $('startAt').onchange = (e) => { game.settings.start = e.target.value; saveSettings(); newSession(); };
     $('soundOn').checked = game.settings.sound;
     $('soundOn').onchange = (e) => { game.settings.sound = e.target.checked; saveSettings(); };
     this.initTouch();
@@ -1678,7 +2564,11 @@ const ui = {
     $('speed').textContent = Math.round(mph);
     $('speedBox').classList.toggle('over', p.speed * MPH > lim + 1);
     $('gear').textContent = p.reversing ? 'R' : 'D';
-    const ls = $('limitSign'); ls.dataset.limit = lim; ls.querySelector('span').textContent = lim === 60 ? '' : lim;
+    const ls = $('limitSign'); ls.dataset.limit = lim >= 60 ? 'nsl' : lim; ls.querySelector('span').textContent = lim >= 60 ? '' : lim;
+    ls.title = lim >= 60 ? `National speed limit: ${lim} mph here` : `${lim} mph limit`;
+    $('limiter').hidden = !p.limiter; $('limiter').textContent = `Limiter ${lim}`;
+    const w = game.where;
+    if (w) { $('roadName').textContent = w.road; $('district').textContent = w.kind === 'dual' ? 'A40 · dual carriageway' : { suburb: 'Ashford Green', city: 'Kingsgate city centre', village: 'Little Mardon', rural: 'Countryside' }[w.district] || ''; }
     const blink = Math.floor(game.time * 2.6) % 2 === 0;
     $('indL').classList.toggle('on', p.ind === -1 && blink);
     $('indR').classList.toggle('on', p.ind === 1 && blink);
@@ -1779,7 +2669,15 @@ const ui = {
 const game = {
   state: 'title', time: 0, player: null, faults: [], theory: { asked: 0, correct: 0, log: [] },
   qTimer: 0, shake: 0, tipShown: {}, lastFaultTopic: null, lastFaultT: -99,
-  settings: { qInterval: 75, camera: 'chase', tips: true, sound: true },
+  settings: { qInterval: 75, camera: 'chase', tips: true, sound: true, assist: 'strong', start: 'suburb' },
+  where: null,
+};
+// Start points: road name, district, distance along, direction.
+const STARTS = {
+  suburb: { road: 'Elm Grove', district: 'suburb', s: 30, dir: 1, label: 'Ashford Green (suburbs)' },
+  city: { road: 'Castle Street', district: 'city', s: 30, dir: 1, label: 'Kingsgate (city centre)' },
+  bypass: { road: 'Oak Street', district: 'rural', s: 40, dir: 1, label: 'Towards the A40 bypass' },
+  village: { road: 'High Street', district: 'village', s: 20, dir: 1, label: 'Little Mardon (village)' },
 };
 const input = { up: false, down: false, left: false, right: false, hand: false };
 let canvas, ctx, mini, mctx, cam = { x: 0, y: 0, rot: 0, scale: 10 };
@@ -1790,18 +2688,16 @@ function saveSettings() { try { localStorage.setItem('keepleft-settings', JSON.s
 function newSession() {
   traffic.cars.length = 0; traffic.peds.length = 0; skids.length = 0;
   const R = rng(Date.now() & 0xffff);
-  const start = world.node(1, 1).edges[1];        // heading south from the lights at (1,1)
-  game.player = makePlayer(start.a.x + LANE, start.a.y + 40, Math.PI / 2);
-  game.player.limit = start.limit;
-  for (let k = 0, tries = 0; k < 64 && tries < 900; tries++) {
-    const e = world.edges[(R() * world.edges.length) | 0];
-    const fwd = R() < 0.5, along = e.a.r + 14 + R() * (SP - e.a.r - e.b.r - 34);
-    const d = fwd ? DIRS[e.dir] : DIRS[(e.dir + 2) % 4], from = fwd ? e.a : e.b;
-    const x = from.x + d[0] * along, y = from.y + d[1] * along;
-    if (Math.hypot(x - game.player.x, y - game.player.y) < 45) continue;
-    if (traffic.cars.some(c => Math.hypot(c.x - x, c.y - y) < 12)) continue;
-    spawnCar(e, fwd, along, R); k++;
-  }
+  const st = STARTS[game.settings.start] || STARTS.suburb;
+  const e = world.edges.find(x => x.name === st.road && x.district === st.district && lanesOf(x, st.dir)) || world.edges[0];
+  const q = pointAt(e, st.dir > 0 ? e.a.r + st.s : e.len - e.b.r - st.s, laneLat(e, st.dir, 0));
+  game.player = makePlayer(q.x, q.y, st.dir > 0 ? q.ang : q.ang + Math.PI);
+  game.player.limit = e.limit; game.player.lastEdge = e;
+  // Keep the first stretch of road clear of parked cars.
+  const before = world.parked.length;
+  world.parked = world.parked.filter(c => Math.hypot(c.x - q.x, c.y - q.y) > 70);
+  if (world.parked.length !== before) buildObstructions();
+  spawnTraffic(R, game.player);
   spawnPeds(R);
   game.faults = []; game.theory = { asked: 0, correct: 0, log: [] }; game.qTimer = 0; game.tipShown = {};
   cam.x = game.player.x; cam.y = game.player.y; cam.rot = game.settings.camera === 'chase' ? -(game.player.heading + Math.PI / 2) : 0;
@@ -1838,6 +2734,9 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyE' || e.code === 'KeyX') setIndicator(1);
   if (e.code === 'KeyC') { game.settings.camera = game.settings.camera === 'chase' ? 'north' : 'chase'; saveSettings(); ui.toast(game.settings.camera === 'chase' ? 'Camera: behind the car' : 'Camera: north up (map view)'); }
   if (e.code === 'KeyH') sfx.horn(true);
+  if (e.code === 'KeyL') { const p = game.player; p.limiter = !p.limiter; ui.toast(p.limiter ? `Speed limiter on: holds you at the limit` : 'Speed limiter off'); }
+  if (e.code === 'KeyK') { const order = ['strong', 'light', 'off'], a = order[(order.indexOf(game.settings.assist) + 1) % 3]; game.settings.assist = a; saveSettings();
+    ui.toast({ strong: 'Lane assist: strong (keeps you centred)', light: 'Lane assist: light (lines you up with the road)', off: 'Lane assist: off' }[a]); if ($('assistMode')) $('assistMode').value = a; }
   if (e.code === 'KeyT') ui.askQuestion();
   if (e.code === 'KeyM') { game.settings.sound = !game.settings.sound; saveSettings(); sfx.update(0, 0); ui.toast(game.settings.sound ? 'Sound on' : 'Sound off'); }
   if (e.code === 'Escape' || e.code === 'KeyP') ui.pause();
@@ -1908,10 +2807,11 @@ function frame(ts) {
       game.time += h;
       const p = game.player;
       const prev = updatePlayerPhysics(p, input, h);
-      collidePlayer(p, prev, game.time);
+      collidePlayer(p, prev);
       leaveSkids(p, prev);
+      updateRail(h, game.time);
       updateCars(h, game.time, p);
-      updatePeds(h, p);
+      updatePeds(h, p, game.time);
     }
     checkRules(game.player, dt);
     game.qTimer += dt;
@@ -1943,7 +2843,7 @@ function render(dt) {
   const p = game.player, sp = Math.hypot(p.vx, p.vy);
   const chase = game.settings.camera === 'chase';
   // Camera: look ahead along the velocity, zoom out with speed.
-  const ahead = chase ? 0.55 : 0.8;
+  const ahead = chase ? 0.45 : 0.8;
   const tx = p.x + p.vx * ahead, ty = p.y + p.vy * ahead;
   const k = Math.min(1, dt * 4);
   cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
@@ -1951,7 +2851,7 @@ function render(dt) {
   const targetScale = base * (1 - Math.min(sp, 32) / 32 * 0.42);
   cam.scale += (targetScale - cam.scale) * Math.min(1, dt * 1.5);
   const rotT = chase ? -(p.heading + Math.PI / 2) : 0;
-  cam.rot += angDiff(rotT, cam.rot) * Math.min(1, dt * (chase ? 3.5 : 6));
+  cam.rot += angDiff(rotT, cam.rot) * Math.min(1, dt * (chase ? 5 : 6));
   game.shake = Math.max(0, game.shake - dt * 2.5);
   const shx = (Math.random() - 0.5) * game.shake * 12 * dpr, shy = (Math.random() - 0.5) * game.shake * 12 * dpr;
 
@@ -1961,9 +2861,12 @@ function render(dt) {
   ctx.rotate(cam.rot); ctx.scale(cam.scale, cam.scale); ctx.translate(-cam.x, -cam.y);
   const rad = Math.hypot(w, h) / cam.scale * 0.62;
   const view = { x0: cam.x - rad, y0: cam.y - rad, x1: cam.x + rad, y1: cam.y + rad };
-  drawWorld(ctx, cam, game.time, view);
-  for (const ped of traffic.peds) if (ped.x > view.x0 && ped.x < view.x1 && ped.y > view.y0 && ped.y < view.y1) drawPed(ctx, ped, game.time);
-  for (const c of traffic.cars) if (c.x > view.x0 - 6 && c.x < view.x1 + 6 && c.y > view.y0 - 6 && c.y < view.y1 + 6) drawCar(ctx, c, game.time);
+  drawWorld(ctx, game.time, view);
+  const inV = (o, m) => o.x > view.x0 - m && o.x < view.x1 + m && o.y > view.y0 - m && o.y < view.y1 + m;
+  for (const ped of traffic.peds) if (inV(ped, 1)) drawPed(ctx, ped, game.time);
+  for (const c of world.parked) if (inV(c, 6)) drawCar(ctx, c, game.time);
+  for (const c of traffic.cars) if (inV(c, 12)) drawCar(ctx, c, game.time);
+  for (const tr of world.trains) drawTrain(ctx, tr, view);
   drawCar(ctx, p, game.time);
   drawBuildingsAndTrees(ctx, view, -cam.rot);
   drawSignsAndLights(ctx, view, -cam.rot, game.time);
@@ -1983,7 +2886,7 @@ function boot() {
   canvas = document.getElementById('game'); ctx = canvas.getContext('2d');
   mini = document.getElementById('minimap'); mctx = mini.getContext('2d');
   resize(); addEventListener('resize', resize);
-  buildWorld();
+  buildMap(); buildIndex(); buildScenery(); buildIndex(); buildObstructions(); prepareRender();
   newSession();
   ui.init();
   requestAnimationFrame(frame);
